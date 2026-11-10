@@ -7,7 +7,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: quickbar 1.13\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-11-10 02:03-0300\n"
+"POT-Creation-Date: 2026-11-10 02:26-0300\n"
 "PO-Revision-Date: 2026-11-09 00:00-0300\n"
 "Last-Translator: JotaRata <jjbarria.c@gmail.com>\n"
 "Language-Team: Spanish <kde-l10n-es@kde.org>\n"
@@ -58,7 +58,23 @@ msgstr "Pantalla &%1 (%2)"
 msgid "&Places"
 msgstr "&Lugares"
 
-#: src/genericmenu.cpp:31
+#: src/desktopmenu.cpp:26
+msgid "&Network"
+msgstr "&Red"
+
+#: src/desktopmenu.cpp:28
+msgid "&Tags"
+msgstr "&Etiquetas"
+
+#: src/genericmenu.cpp:37
+msgid "&File"
+msgstr "&Archivo"
+
+#: src/genericmenu.cpp:38
+msgid "Quit Application"
+msgstr "Salir de la aplicación"
+
+#: src/genericmenu.cpp:42
 msgid "&Edit"
 msgstr "&Editar"
 
@@ -182,9 +198,6 @@ msgstr "Configurar las &preferencias especiales de la aplicación…"
 msgid "About QuickBar"
 msgstr "Acerca de QuickBar"
 
-#: src/windowmenu.cpp:92
-msgid "Quit Application"
-msgstr "Salir de la aplicación"
 
 #: qml/AppNameLabel.qml:44
 msgctxt "@info:usagetip"
@@ -538,8 +551,6 @@ msgctxt "@info:usagetip"
 msgid "Open a menu"
 msgstr "Abrir un menú"
 
-#~ msgid "&File"
-#~ msgstr "&Archivo"
 
 #~ msgid "&View"
 #~ msgstr "&Ver"

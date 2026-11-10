@@ -23,6 +23,10 @@ DesktopMenu::DesktopMenu(QObject *parent)
     m_menu->setObjectName(QStringLiteral("quickbar-desktop-menu"));
 
     m_placesMenu = m_menu->addMenu(i18n("&Places"));
+    m_networkMenu = m_placesMenu->addMenu(i18n("&Network"));
+    m_networkMenu->setIcon(QIcon::fromTheme(QStringLiteral("folder-network")));
+    m_tagsMenu = m_placesMenu->addMenu(i18n("&Tags"));
+    m_tagsMenu->setIcon(QIcon::fromTheme(QStringLiteral("tag")));
 
     m_placesModel = new KFilePlacesModel(this);
 
@@ -81,7 +85,7 @@ void DesktopMenu::flushPendingRebuild()
 
 void DesktopMenu::rebuildPlacesMenu()
 {
-    if (!m_placesModel || !m_placesMenu) {
+    if (!m_placesModel || !m_placesMenu || !m_networkMenu || !m_tagsMenu) {
         return;
     }
 
@@ -96,30 +100,19 @@ void DesktopMenu::rebuildPlacesMenu()
     }
     m_rebuildPending = false;
 
+    // The Network/Tags submenus are children of m_placesMenu: clear()
+    // detaches them from the dropdown without deleting them, so they
+    // survive rebuilds. Their own entries are never borrowed by QuickBar
+    // (only the dropdown's level-1 actions are), which is why rebuilding
+    // them here is safe.
     m_placesMenu->clear();
+    m_networkMenu->clear();
+    m_tagsMenu->clear();
 
-    KFilePlacesModel::GroupType previousGroup = KFilePlacesModel::PlacesType;
-    bool havePrevious = false;
-    int builtCount = 0;
-
-    const int rows = m_placesModel->rowCount();
-    for (int row = 0; row < rows; ++row) {
-        const QModelIndex index = m_placesModel->index(row, 0);
-        if (!index.isValid() || m_placesModel->isHidden(index)) {
-            continue;
-        }
-
-        const KFilePlacesModel::GroupType group = m_placesModel->groupType(index);
-        // Section separators between the Places panel groups, e.g.
-        // Places vs Devices, like the Dolphin sidebar headers.
-        if (havePrevious && group != previousGroup) {
-            m_placesMenu->addSeparator();
-        }
-        previousGroup = group;
-        havePrevious = true;
-
+    // One entry builder for the flat dropdown and the group submenus.
+    auto addPlaceAction = [this](QMenu *target, const QModelIndex &index) {
         const QUrl url = m_placesModel->url(index);
-        auto *action = m_placesMenu->addAction(m_placesModel->text(index));
+        auto *action = target->addAction(m_placesModel->text(index));
         action->setIcon(m_placesModel->icon(index));
         // Devices needing a mount stay clickable: triggering mounts them
         // (requestSetup) and setupDone opens them. Only mid-setup and
@@ -141,7 +134,60 @@ void DesktopMenu::rebuildPlacesMenu()
             }
             openPlace(url);
         });
+    };
 
+    KFilePlacesModel::GroupType previousGroup = KFilePlacesModel::PlacesType;
+    bool havePrevious = false;
+    bool networkAttached = false;
+    bool tagsAttached = false;
+    int builtCount = 0;
+
+    // Groups rendered as persistent submenus instead of flat entries:
+    // attached once at the position of the group's first visible entry,
+    // skipped entirely while the group has no visible entries.
+    auto attachSubmenuGroup = [&](QMenu *submenu, bool &attached, const QModelIndex &idx, KFilePlacesModel::GroupType groupType) {
+        if (!attached) {
+            attached = true;
+            if (havePrevious) {
+                m_placesMenu->addSeparator();
+            }
+            m_placesMenu->addMenu(submenu);
+            previousGroup = groupType;
+            havePrevious = true;
+        }
+        addPlaceAction(submenu, idx);
+        ++builtCount;
+    };
+
+    const int rows = m_placesModel->rowCount();
+    for (int row = 0; row < rows; ++row) {
+        const QModelIndex index = m_placesModel->index(row, 0);
+        if (!index.isValid() || m_placesModel->isHidden(index)) {
+            continue;
+        }
+
+        const KFilePlacesModel::GroupType group = m_placesModel->groupType(index);
+
+        if (group == KFilePlacesModel::RemoteType) {
+            // Remote places (sftp, remote:/, …) live in the Network submenu.
+            attachSubmenuGroup(m_networkMenu, networkAttached, index, group);
+            continue;
+        }
+        if (group == KFilePlacesModel::TagsType) {
+            // Tag places live in the Tags submenu.
+            attachSubmenuGroup(m_tagsMenu, tagsAttached, index, group);
+            continue;
+        }
+
+        // Section separators between the Places panel groups, e.g.
+        // Places vs Devices, like the Dolphin sidebar headers.
+        if (havePrevious && group != previousGroup) {
+            m_placesMenu->addSeparator();
+        }
+        previousGroup = group;
+        havePrevious = true;
+
+        addPlaceAction(m_placesMenu, index);
         ++builtCount;
     }
 

@@ -44,6 +44,12 @@ private:
 
     std::unique_ptr<QMenu> m_menu;
     QPointer<QMenu> m_placesMenu;
+    // Persistent submenus for the remote ("Network") and tag ("Tags")
+    // place groups. Created once: rebuilds detach and re-attach them
+    // (QMenu::clear() removes but does not delete addMenu()-created
+    // submenus), so they never leak or duplicate.
+    QPointer<QMenu> m_networkMenu;
+    QPointer<QMenu> m_tagsMenu;
     QPointer<KFilePlacesModel> m_placesModel;
     // Number of actions added by the last rebuild. Used to tell an empty
     // Places model from a dropdown whose actions are borrowed by QuickBar.

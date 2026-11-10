@@ -8,7 +8,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PACKAGE VERSION\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-11-10 02:03-0300\n"
+"POT-Creation-Date: 2026-11-10 02:26-0300\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: LANGUAGE <LL@li.org>\n"
@@ -58,7 +58,23 @@ msgstr ""
 msgid "&Places"
 msgstr ""
 
-#: src/genericmenu.cpp:31
+#: src/desktopmenu.cpp:26
+msgid "&Network"
+msgstr ""
+
+#: src/desktopmenu.cpp:28
+msgid "&Tags"
+msgstr ""
+
+#: src/genericmenu.cpp:37
+msgid "&File"
+msgstr ""
+
+#: src/genericmenu.cpp:38
+msgid "Quit Application"
+msgstr ""
+
+#: src/genericmenu.cpp:42
 msgid "&Edit"
 msgstr ""
 
@@ -180,10 +196,6 @@ msgstr ""
 
 #: src/windowmenu.cpp:90
 msgid "About QuickBar"
-msgstr ""
-
-#: src/windowmenu.cpp:92
-msgid "Quit Application"
 msgstr ""
 
 #: qml/AppNameLabel.qml:44
