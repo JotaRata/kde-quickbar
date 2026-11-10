@@ -116,6 +116,10 @@
       <label>Enable in-menu search on Wayland (requires app support)</label>
       <default>true</default>
     </entry>
+    <entry name="searchDisplay" type="String">
+      <label>How to show the search entry (text, icon, or hidden)</label>
+      <default>text</default>
+    </entry>
     <entry name="enableGenericMenu" type="Bool">
       <label>Show a generic File/Edit/View/Help menu when the app does not export a global menu</label>
       <default>true</default>

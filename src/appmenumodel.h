@@ -48,12 +48,18 @@ class AppMenuModel : public QAbstractListModel
     Q_PROPERTY(QRect screenGeometry READ screenGeometry WRITE setScreenGeometry NOTIFY screenGeometryChanged)
 
 public:
+    // Dynamic property marking the model-owned search dropdown. The applet
+    // must never proxy this menu: results are inserted into it while it is
+    // visible, and a proxy would leave them in a hidden source menu.
+    static constexpr char SearchMenuProperty[] = "quickbarSearchMenu";
+
     explicit AppMenuModel(QObject *parent = nullptr);
     ~AppMenuModel() override;
 
     enum AppMenuRole {
         MenuRole = Qt::UserRole + 1, // TODO this should be Qt::DisplayRole
         ActionRole,
+        SearchRole,
     };
 
     QVariant data(const QModelIndex &index, int role) const override;
@@ -254,7 +260,7 @@ private:
     MenuShortcutBridge *m_shortcutBridge = nullptr;
     QPointer<QMenu> m_menu;
     QPointer<QAction> m_searchAction;
-    QList<QAction *> m_currentSearchActions;
+    QList<QPointer<QAction>> m_currentSearchActions;
 
     bool m_hasActiveWindow = false;
 

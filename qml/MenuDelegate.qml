@@ -19,6 +19,16 @@ AbstractButton {
     property int fontWeight: 0
     property string textColor: ""
     property string hoverTextColor: ""
+    property string iconName: ""
+
+    readonly property color effectiveTextColor: {
+        const useHover = controlRoot.menuState !== MenuDelegate.State.Rest
+        const custom = useHover ? controlRoot.hoverTextColor : controlRoot.textColor
+        if (custom && custom.length > 0) {
+            return custom
+        }
+        return useHover ? Kirigami.Theme.highlightedTextColor : Kirigami.Theme.textColor
+    }
 
     signal activated()
 
@@ -71,22 +81,37 @@ AbstractButton {
         }
     }
 
-    contentItem: PC3.Label {
-        text: controlRoot.Kirigami.MnemonicData.richTextLabel
-        textFormat: Text.StyledText
-        verticalAlignment: Text.AlignVCenter
-        horizontalAlignment: Text.AlignHCenter
-        elide: Text.ElideRight
-        font.family: controlRoot.fontFamily || Kirigami.Theme.defaultFont.family
-        font.pointSize: controlRoot.fontSize > 0 ? controlRoot.fontSize : Kirigami.Theme.defaultFont.pointSize
-        font.weight: controlRoot.fontWeight > 0 ? controlRoot.fontWeight : Kirigami.Theme.defaultFont.weight
-        color: {
-            const useHover = controlRoot.menuState !== MenuDelegate.State.Rest
-            const custom = useHover ? controlRoot.hoverTextColor : controlRoot.textColor
-            if (custom && custom.length > 0) {
-                return custom
-            }
-            return useHover ? Kirigami.Theme.highlightedTextColor : Kirigami.Theme.textColor
+    contentItem: Item {
+        implicitWidth: controlRoot.iconName.length > 0 ? contentIcon.implicitWidth : contentLabel.implicitWidth
+        implicitHeight: controlRoot.iconName.length > 0 ? contentIcon.implicitHeight : contentLabel.implicitHeight
+
+        Kirigami.Icon {
+            id: contentIcon
+            visible: controlRoot.iconName.length > 0
+            source: controlRoot.iconName
+            color: controlRoot.effectiveTextColor
+            implicitWidth: Kirigami.Units.iconSizes.small
+            implicitHeight: Kirigami.Units.iconSizes.small
+            anchors.centerIn: parent
+        }
+
+        PC3.Label {
+            id: contentLabel
+            visible: controlRoot.iconName.length === 0
+            width: parent.width
+            anchors.centerIn: parent
+            text: controlRoot.Kirigami.MnemonicData.richTextLabel
+            textFormat: Text.StyledText
+            verticalAlignment: Text.AlignVCenter
+            horizontalAlignment: Text.AlignHCenter
+            elide: Text.ElideRight
+            font.family: controlRoot.fontFamily || Kirigami.Theme.defaultFont.family
+            font.pointSize: controlRoot.fontSize > 0 ? controlRoot.fontSize : Kirigami.Theme.defaultFont.pointSize
+            font.weight: controlRoot.fontWeight > 0 ? controlRoot.fontWeight : Kirigami.Theme.defaultFont.weight
+            color: controlRoot.effectiveTextColor
         }
     }
+
+    PC3.ToolTip.visible: hovered && controlRoot.iconName.length > 0
+    PC3.ToolTip.text: controlRoot.text
 }
