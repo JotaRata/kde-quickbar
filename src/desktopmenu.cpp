@@ -23,6 +23,8 @@ DesktopMenu::DesktopMenu(QObject *parent)
     m_menu->setObjectName(QStringLiteral("quickbar-desktop-menu"));
 
     m_placesMenu = m_menu->addMenu(i18n("&Places"));
+    m_networkMenu = m_placesMenu->addMenu(i18n("&Network"));
+    m_networkMenu->setIcon(QIcon::fromTheme(QStringLiteral("folder-network")));
 
     m_placesModel = new KFilePlacesModel(this);
 
@@ -81,7 +83,7 @@ void DesktopMenu::flushPendingRebuild()
 
 void DesktopMenu::rebuildPlacesMenu()
 {
-    if (!m_placesModel || !m_placesMenu) {
+    if (!m_placesModel || !m_placesMenu || !m_networkMenu) {
         return;
     }
 
@@ -96,30 +98,17 @@ void DesktopMenu::rebuildPlacesMenu()
     }
     m_rebuildPending = false;
 
+    // m_networkMenu is a child of m_placesMenu: clear() detaches it from
+    // the dropdown without deleting it, so it survives rebuilds. Its own
+    // entries are never borrowed by QuickBar (only the dropdown's level-1
+    // actions are), which is why rebuilding it here is safe.
     m_placesMenu->clear();
+    m_networkMenu->clear();
 
-    KFilePlacesModel::GroupType previousGroup = KFilePlacesModel::PlacesType;
-    bool havePrevious = false;
-    int builtCount = 0;
-
-    const int rows = m_placesModel->rowCount();
-    for (int row = 0; row < rows; ++row) {
-        const QModelIndex index = m_placesModel->index(row, 0);
-        if (!index.isValid() || m_placesModel->isHidden(index)) {
-            continue;
-        }
-
-        const KFilePlacesModel::GroupType group = m_placesModel->groupType(index);
-        // Section separators between the Places panel groups, e.g.
-        // Places vs Devices, like the Dolphin sidebar headers.
-        if (havePrevious && group != previousGroup) {
-            m_placesMenu->addSeparator();
-        }
-        previousGroup = group;
-        havePrevious = true;
-
+    // One entry builder for both the flat dropdown and the Network submenu.
+    auto addPlaceAction = [this](QMenu *target, const QModelIndex &index) {
         const QUrl url = m_placesModel->url(index);
-        auto *action = m_placesMenu->addAction(m_placesModel->text(index));
+        auto *action = target->addAction(m_placesModel->text(index));
         action->setIcon(m_placesModel->icon(index));
         // Devices needing a mount stay clickable: triggering mounts them
         // (requestSetup) and setupDone opens them. Only mid-setup and
@@ -141,7 +130,49 @@ void DesktopMenu::rebuildPlacesMenu()
             }
             openPlace(url);
         });
+    };
 
+    KFilePlacesModel::GroupType previousGroup = KFilePlacesModel::PlacesType;
+    bool havePrevious = false;
+    bool networkAttached = false;
+    int builtCount = 0;
+
+    const int rows = m_placesModel->rowCount();
+    for (int row = 0; row < rows; ++row) {
+        const QModelIndex index = m_placesModel->index(row, 0);
+        if (!index.isValid() || m_placesModel->isHidden(index)) {
+            continue;
+        }
+
+        const KFilePlacesModel::GroupType group = m_placesModel->groupType(index);
+
+        if (group == KFilePlacesModel::RemoteType) {
+            // Remote places live inside the Network submenu, attached once
+            // at the position of the first visible remote entry. Skipped
+            // entirely while all remote entries are hidden.
+            if (!networkAttached) {
+                networkAttached = true;
+                if (havePrevious) {
+                    m_placesMenu->addSeparator();
+                }
+                m_placesMenu->addMenu(m_networkMenu);
+                previousGroup = group;
+                havePrevious = true;
+            }
+            addPlaceAction(m_networkMenu, index);
+            ++builtCount;
+            continue;
+        }
+
+        // Section separators between the Places panel groups, e.g.
+        // Places vs Devices, like the Dolphin sidebar headers.
+        if (havePrevious && group != previousGroup) {
+            m_placesMenu->addSeparator();
+        }
+        previousGroup = group;
+        havePrevious = true;
+
+        addPlaceAction(m_placesMenu, index);
         ++builtCount;
     }
 
