@@ -34,6 +34,8 @@ PlasmoidItem {
     readonly property int itemSpacing: Plasmoid.configuration.itemSpacing
     readonly property int maxMenuCells: Plasmoid.configuration.maxMenuCells
     readonly property string hideByWindowState: Plasmoid.configuration.hideByWindowState
+    readonly property bool menuSearchEnabled: Plasmoid.configuration.enableMenuSearch
+        && Plasmoid.configuration.searchDisplay !== "hidden"
     readonly property bool inPanelConfigure: Plasmoid.userConfiguring
         || (Plasmoid.containment?.corona?.editMode ?? false)
 
@@ -710,12 +712,14 @@ PlasmoidItem {
                         required property int index
                         required property string activeMenu
                         required property PlasmaCore.Action activeActions
+                        required property bool isSearch
                         readonly property int buttonIndex: index
 
                         Layout.alignment: Qt.AlignVCenter
                         Layout.fillWidth: root.vertical
                         Layout.fillHeight: !root.vertical
                         text: activeMenu
+                        iconName: isSearch && Plasmoid.configuration.searchDisplay === "icon" ? "search" : ""
                         Kirigami.MnemonicData.active: altState.pressed
 
                         down: Plasmoid.currentIndex === index
@@ -767,7 +771,7 @@ PlasmoidItem {
         stickyMenuBar: root.stickyMenuBar
         showDesktopMenu: root.showDesktopMenu
         enableGenericMenu: Plasmoid.configuration.enableGenericMenu
-        enableMenuSearch: Plasmoid.configuration.enableMenuSearch
+        enableMenuSearch: root.menuSearchEnabled
         excludedItemsRegex: Plasmoid.configuration.excludedItemsRegex
         onRequestActivateIndex: Plasmoid.requestActivateIndex(index)
         Component.onCompleted: {
@@ -839,7 +843,10 @@ PlasmoidItem {
             appMenuModel.enableGenericMenu = Plasmoid.configuration.enableGenericMenu
         }
         function onEnableMenuSearchChanged() {
-            appMenuModel.enableMenuSearch = Plasmoid.configuration.enableMenuSearch
+            appMenuModel.enableMenuSearch = root.menuSearchEnabled
+        }
+        function onSearchDisplayChanged() {
+            appMenuModel.enableMenuSearch = root.menuSearchEnabled
         }
         function onExcludedItemsRegexChanged() {
             appMenuModel.excludedItemsRegex = Plasmoid.configuration.excludedItemsRegex

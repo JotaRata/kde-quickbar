@@ -597,7 +597,7 @@ void QuickBarApplet::clampSubmenu(QMenu *sub)
     sub->setMaximumWidth(clampedWidth);
 
     int clampedHeight = geo.height() - 40;
-    if (m_maxMenuCells > 0) {
+    if (m_maxMenuCells > 0 && !sub->property(AppMenuModel::SearchMenuProperty).toBool()) {
         const int cellsHeight = calculateMaxHeightForCells(sub, m_maxMenuCells);
         clampedHeight = qMin(cellsHeight, geo.height() - 40);
     }
@@ -716,6 +716,7 @@ void QuickBarApplet::trigger(QQuickItem *ctx, int idx)
 
     QMenu *actionMenu = createMenu(idx);
     if (actionMenu) {
+        const bool isSearchMenu = actionMenu->property(AppMenuModel::SearchMenuProperty).toBool();
         // this is a workaround where Qt will fail to realize a mouse has been released
         // this happens if a window which does not accept focus spawns a new window that takes focus and X grab
         // whilst the mouse is depressed
@@ -730,11 +731,18 @@ void QuickBarApplet::trigger(QQuickItem *ctx, int idx)
             }
         };
 
-        if (view() == FullView) {
+        if (view() == FullView && !isSearchMenu) {
             if (!m_currentMenu || !m_ownsCurrentMenu) {
-                // Fresh state or returning from CompactView, whose pointers
-                // borrow a model-owned menu: never reuse that as the proxy.
-                // Drop the borrowed refs and allocate our own reusable menu.
+                // Fresh state or returning from CompactView/the borrowed
+                // search menu, whose pointers must never be reused as the
+                // proxy. Close the borrowed popup (it is model-owned and must
+                // not be deleted) and allocate our own reusable menu.
+                if (m_currentMenu) {
+                    m_currentMenu->removeEventFilter(this);
+                    if (m_currentMenu->isVisible()) {
+                        m_currentMenu->hide();
+                    }
+                }
                 m_currentMenu.clear();
                 m_sourceMenu.clear();
                 m_currentMenu = new QMenu(qobject_cast<QWidget *>(actionMenu->parent()));
@@ -773,14 +781,29 @@ void QuickBarApplet::trigger(QQuickItem *ctx, int idx)
                 menuAction->setMenu(m_currentMenu);
             }
         } else {
-            // CompactView borrows the model-owned menu directly. If a FullView
-            // proxy still holds stolen actions, return them back to the model
-            // first — otherwise the source submenu is left empty and the next
-            // FullView use reads freed/corrupted state and crashes.
+            // CompactView borrows the model-owned menu directly. The search
+            // menu is also borrowed in FullView: its results are inserted
+            // into it while it is visible, so proxying it would leave them in
+            // the hidden source menu. If a FullView proxy still holds stolen
+            // actions, return them back to the model first — otherwise the
+            // source submenu is left empty and the next FullView use reads
+            // freed/corrupted state and crashes.
             restoreStolenActions();
             if (m_ownsCurrentMenu && m_currentMenu) {
-                m_currentMenu->removeEventFilter(this);
-                delete m_currentMenu.data();
+                QMenu *proxy = m_currentMenu.data();
+                proxy->removeEventFilter(this);
+                // trigger() can run from a mouse event that is being delivered
+                // to this very popup (e.g. the pointer leaves an open menu and
+                // hovers the search entry). Destroying it synchronously frees
+                // the widget under Qt's event filters and crashes plasmashell
+                // in QCoreApplicationPrivate::sendThroughObjectEventFilters().
+                // Hide it now so the borrowed menu can take over the popup
+                // grab, then delete it once the event dispatch has unwound.
+                proxy->disconnect(this);
+                if (proxy->isVisible()) {
+                    proxy->hide();
+                }
+                proxy->deleteLater();
             }
             m_currentMenu.clear();
             m_currentMenu = actionMenu;
@@ -817,7 +840,7 @@ void QuickBarApplet::trigger(QQuickItem *ctx, int idx)
         } else if (location() == Plasma::Types::BottomEdge) {
             screenMaxHeight = pos.y() - geo.y() - 10;
         }
-        const int clampedHeight = (m_maxMenuCells > 0)
+        const int clampedHeight = (!isSearchMenu && m_maxMenuCells > 0)
             ? qMin(calculateMaxHeightForCells(m_currentMenu.data(), m_maxMenuCells), screenMaxHeight)
             : screenMaxHeight;
         if (clampedHeight > 0) {
@@ -842,7 +865,7 @@ void QuickBarApplet::trigger(QQuickItem *ctx, int idx)
             d->scroll = new QMenuPrivate::QMenuScroller;
         }
 
-        if (view() == FullView) {
+        if (view() == FullView && !isSearchMenu) {
             m_currentMenu->removeEventFilter(this);
             m_currentMenu->installEventFilter(this);
             m_currentMenu->winId(); // create window handle
@@ -860,7 +883,7 @@ void QuickBarApplet::trigger(QQuickItem *ctx, int idx)
             }
             clampActionRects(m_currentMenu.data());
             hookSubmenus(m_currentMenu.data());
-        } else if (view() == CompactView) {
+        } else if (view() == CompactView || isSearchMenu) {
             if (m_currentMenu->isEmpty()) {
                 // don't try to popup an empty menu in case the app gives us one
                 return;
@@ -917,6 +940,40 @@ bool QuickBarApplet::eventFilter(QObject *watched, QEvent *event)
                     lineEdit->selectAll();
                 });
             }
+        }
+    }
+
+    // The search dropdown grows as results are typed in. Keep it on screen:
+    // QMenu only clamps its position when it is first popped up.
+    if (event->type() == QEvent::Resize && menu->property(AppMenuModel::SearchMenuProperty).toBool()) {
+        QScreen *screen = menu->screen();
+        if (!screen) {
+            screen = QGuiApplication::primaryScreen();
+        }
+        if (screen) {
+            const QRect available = screen->availableGeometry();
+            QRect geom = menu->geometry();
+            if (geom.bottom() > available.bottom()) {
+                geom.moveBottom(available.bottom());
+            }
+            if (geom.top() < available.top()) {
+                geom.moveTop(available.top());
+            }
+            if (geom.right() > available.right()) {
+                geom.moveRight(available.right());
+            }
+            if (geom.left() < available.left()) {
+                geom.moveLeft(available.left());
+            }
+            if (geom.topLeft() != menu->pos()) {
+                menu->move(geom.topLeft());
+            }
+        }
+        if (auto d = QMenuPrivate::get(menu); d && d->scroll) {
+            d->scroll->scrollOffset = 0;
+            d->scroll->scrollFlags = totalContentHeight(menu) > menu->height()
+                ? QMenuPrivate::QMenuScroller::ScrollDown
+                : QMenuPrivate::QMenuScroller::ScrollNone;
         }
     }
 
