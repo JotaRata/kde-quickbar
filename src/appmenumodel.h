@@ -14,6 +14,7 @@
 #include <QStringList>
 #include <qqmlregistration.h>
 #include <tasksmodel.h>
+#include <virtualdesktopinfo.h>
 
 #include <Plasma/Containment>
 
@@ -39,6 +40,7 @@ class AppMenuModel : public QAbstractListModel
     Q_PROPERTY(bool enableMenuSearch READ enableMenuSearch WRITE setEnableMenuSearch NOTIFY enableMenuSearchChanged)
     Q_PROPERTY(QString applicationName READ applicationName NOTIFY applicationNameChanged)
     Q_PROPERTY(QVariant applicationIcon READ applicationIcon NOTIFY applicationIconChanged)
+    Q_PROPERTY(bool hasActiveWindow READ hasActiveWindow NOTIFY hasActiveWindowChanged)
     Q_PROPERTY(QString excludedItemsRegex READ excludedItemsRegex WRITE setExcludedItemsRegex NOTIFY excludedItemsRegexChanged)
     Q_PROPERTY(bool allScreens READ allScreens WRITE setallScreens NOTIFY allScreensChanged)
 
@@ -85,6 +87,21 @@ public:
     QString applicationName() const;
     QVariant applicationIcon() const;
 
+    // True while a task window is active, i.e. the application-name dropdown
+    // has a window to act on.
+    bool hasActiveWindow() const;
+
+    // Lazily created dropdown opened from the application name label,
+    // mirroring KWin's window operations menu (Alt+F3) through the task
+    // manager. Owned by the model; the applet borrows it like the
+    // CompactView menu.
+    QMenu *windowMenu();
+
+    // macOS-style system menu shown by the same application-name dropdown
+    // while the desktop instead of a window is active. Owned by the model,
+    // like the window menu.
+    QMenu *systemMenu();
+
     QString excludedItemsRegex() const;
     void setExcludedItemsRegex(const QString &regex);
 
@@ -115,6 +132,7 @@ Q_SIGNALS:
     void enableMenuSearchChanged();
     void applicationNameChanged();
     void applicationIconChanged();
+    void hasActiveWindowChanged();
     void excludedItemsRegexChanged();
     void modelNeedsUpdate();
     void containmentStatusChanged();
@@ -143,6 +161,7 @@ private:
 
     void setApplicationName(const QString &name);
     void setApplicationIcon(const QVariant &icon);
+    void setHasActiveWindow(bool active);
     void setActiveWindowMaximized(bool maximized);
     // True when the given task is maximized, resolving group parents to
     // their active child. Invalid index returns false.
@@ -159,18 +178,63 @@ private:
     void quitActiveTask();
     void minimizeActiveTask();
     void maximizeActiveTask();
-    void wireGenericMenuActions(QMenu *menu);
-    void updateGenericMenuActionState();
+    void keepAboveActiveTask();
+    void keepBelowActiveTask();
+    void fullScreenActiveTask();
+    void noBorderActiveTask();
+    void excludeFromCaptureActiveTask();
+    void moveActiveTask();
+    void resizeActiveTask();
+    // Open kcm_kwinrules for the active task's window (Wayland uuid); with
+    // wholeApplication, preselect the whole-application rules tab.
+    void openWindowRules(bool wholeApplication);
+    // System-menu actions (desktop-focused name dropdown).
+    void openAboutSystem();
+    void openSystemSettings();
+    void lockScreen();
+    void logoutSession();
+    void sleepSession();
+    void restartSession();
+    void shutdownSession();
+    // Connect actions carrying the quickbar action properties to the
+    // task-manager slots. Works for any menu built with those properties,
+    // e.g. the generic and window menus.
+    void wireMenuActions(QMenu *menu);
+    // Refresh enabled/checked state of the property-carrying actions in
+    // `menu` from the active task capabilities.
+    void updateMenuActionState(QMenu *menu);
+    void ensureWindowMenuCreated();
+    // Create (once) and wire the system menu; it is static — no per-task
+    // state to refresh.
+    void ensureSystemMenuCreated();
+    // Refresh the window menu (if created) for the current active task.
+    void updateWindowMenuState();
+    // Rebuild the Desktops submenu (VirtualDesktopInfo desktop ids/names,
+    // the task's desktops, "All Desktops", "Move to New Desktop") for the
+    // current active task. Called on task changes and on submenu show.
+    void rebuildDesktopsMenu();
+    // Rebuild the Move-to-Screen submenu from the screen list. Requires
+    // TaskManager::TasksModel::requestSendToOutput (Plasma 6.9+), discovered
+    // at runtime: the entry stays hidden on older stacks.
+    void rebuildScreensMenu();
     bool genericMenuHasDuplicateActions(const QMenu *menu) const;
     TaskManager::TasksModel *m_tasksModel;
 
     std::unique_ptr<QMenu> m_searchMenu;
     std::unique_ptr<QMenu> m_genericMenu;
+    std::unique_ptr<QMenu> m_windowMenu;
+    std::unique_ptr<QMenu> m_systemMenu;
+    // Dynamic submenus of the window menu (owned by m_windowMenu).
+    QPointer<QMenu> m_desktopsMenu;
+    QPointer<QMenu> m_screensMenu;
+    TaskManager::VirtualDesktopInfo *m_virtualDesktopInfo = nullptr;
     std::unique_ptr<DesktopMenu> m_desktopMenu;
     MenuShortcutBridge *m_shortcutBridge = nullptr;
     QPointer<QMenu> m_menu;
     QPointer<QAction> m_searchAction;
     QList<QAction *> m_currentSearchActions;
+
+    bool m_hasActiveWindow = false;
 
     void removeSearchActionsFromMenu();
     void insertSearchActionsIntoMenu(const QString &filter = QString());

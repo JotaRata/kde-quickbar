@@ -59,10 +59,17 @@ plasma_add_applet(org.quickbar.globalmenu
         src/appmenumodel.h
         src/genericmenu.cpp
         src/genericmenu.h
+        src/windowmenu.cpp
+        src/windowmenu.h
+        src/quickbaractions.h
         src/desktopmenu.cpp
         src/desktopmenu.h
+        src/systemmenu.cpp
+        src/systemmenu.h
         src/menushortcutsender.cpp
         src/menushortcutsender.h
+        src/kwinscripts.cpp
+        src/kwinscripts.h
     RESOURCES
         main.xml
     QML_ARGS

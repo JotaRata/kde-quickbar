@@ -355,12 +355,41 @@ void QuickBarApplet::setButtonGrid(QQuickItem *buttonGrid)
     }
 }
 
+QQuickItem *QuickBarApplet::windowMenuButton() const
+{
+    return m_windowMenuButton;
+}
+
+void QuickBarApplet::setWindowMenuButton(QQuickItem *windowMenuButton)
+{
+    if (m_windowMenuButton != windowMenuButton) {
+        m_windowMenuButton = windowMenuButton;
+        Q_EMIT windowMenuButtonChanged();
+    }
+}
+
 QMenu *QuickBarApplet::createMenu(int idx) const
 {
     QMenu *menu = nullptr;
 
     if (!m_model) {
         return nullptr;
+    }
+
+    if (idx == WindowMenuIndex) {
+        // The application-name dropdown: the model-owned window menu, opened
+        // through the very same trigger() path (steal/borrow, clamping, hover
+        // switching, close) as any other top-level menu. While the desktop
+        // instead of a window is active, the same dropdown opens the
+        // macOS-style system menu.
+        if (auto *menuModel = qobject_cast<AppMenuModel *>(m_model)) {
+            if (menuModel->hasActiveWindow()) {
+                menu = menuModel->windowMenu();
+            } else {
+                menu = menuModel->systemMenu();
+            }
+        }
+        return menu;
     }
 
     if (view() == CompactView) {
@@ -993,6 +1022,21 @@ bool QuickBarApplet::eventFilter(QObject *watched, QEvent *event)
         }
 
         auto *e = static_cast<QMouseEvent *>(event);
+
+        // Hovering the application-name button while a dropdown is open
+        // switches to its window menu, exactly like hovering another
+        // menubar button: plain trigger(), no special handling.
+        if (m_windowMenuButton && m_windowMenuButton->isVisible() && m_windowMenuButton->isEnabled()
+            && m_windowMenuButton->window()) {
+            const QPointF nameWindowPos = m_windowMenuButton->window()->mapFromGlobal(e->globalPosition());
+            const QPointF namePos = m_windowMenuButton->mapFromScene(nameWindowPos);
+            if (m_windowMenuButton->contains(namePos)) {
+                if (m_currentMenu && m_currentMenu->isVisible()) {
+                    trigger(m_windowMenuButton, WindowMenuIndex);
+                }
+                return false;
+            }
+        }
 
         if (!m_buttonGrid || !m_buttonGrid->window()) {
             return false;

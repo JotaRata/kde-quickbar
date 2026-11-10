@@ -38,6 +38,7 @@ KCMUtils.SimpleKCM {
     readonly property bool cfg_hoverOpensMenuDefault: true
     readonly property bool cfg_enableMenuSearchDefault: true
     readonly property bool cfg_enableGenericMenuDefault: true
+    readonly property bool cfg_enableWindowMenuDefault: true
     readonly property string cfg_excludedItemsRegexDefault: ""
     readonly property int cfg_maxMenuCellsDefault: 15
 
@@ -52,6 +53,7 @@ KCMUtils.SimpleKCM {
     property alias cfg_hoverOpensMenu: hoverOpensMenuCheck.checked
     property alias cfg_enableMenuSearch: enableMenuSearchCheck.checked
     property alias cfg_enableGenericMenu: enableGenericMenuCheck.checked
+    property alias cfg_enableWindowMenu: enableWindowMenuCheck.checked
     property alias cfg_excludedItemsRegex: excludedItemsRegexField.text
     property alias cfg_maxMenuCells: maxMenuCellsSpin.value
     property alias cfg_showApplicationName: showApplicationNameCheck.checked
@@ -374,6 +376,15 @@ KCMUtils.SimpleKCM {
                         Kirigami.FormData.label: " "
                         text: i18n("Show application icon before the menu")
                         enabled: showApplicationNameCheck.checked
+                    }
+
+                    QQC2.CheckBox {
+                        id: enableWindowMenuCheck
+                        Kirigami.FormData.label: " "
+                        text: i18n("Open window actions menu from the application name")
+                        enabled: showApplicationNameCheck.checked
+                        QQC2.ToolTip.visible: hovered
+                        QQC2.ToolTip.text: i18n("Clicking the application name opens a menu with minimize, maximize and quit for the active window.")
                     }
 
                     QQC2.CheckBox {

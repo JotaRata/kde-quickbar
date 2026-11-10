@@ -34,6 +34,11 @@ PlasmoidItem {
     readonly property int itemSpacing: Plasmoid.configuration.itemSpacing
     readonly property int maxMenuCells: Plasmoid.configuration.maxMenuCells
     readonly property string hideByWindowState: Plasmoid.configuration.hideByWindowState
+    readonly property bool windowMenuEnabled: Plasmoid.configuration.enableWindowMenu
+    // Sentinel index of the application-name window menu: passed to
+    // Plasmoid.trigger() and reported via Plasmoid.currentIndex while open.
+    // Keep in sync with QuickBarApplet::WindowMenuIndex.
+    readonly property int windowMenuIndex: -2
     readonly property bool inPanelConfigure: Plasmoid.userConfiguring
         || (Plasmoid.containment?.corona?.editMode ?? false)
 
@@ -99,11 +104,38 @@ PlasmoidItem {
             fontSize: Plasmoid.configuration.appNameFontSize
             fontFamily: Plasmoid.configuration.appNameFontFamily
             fontWeight: Plasmoid.configuration.appNameFontWeight
+            hoverCornerRadius: Plasmoid.configuration.hoverCornerRadius
+            // Declarative, like MenuDelegate: the popup grabs the mouse on
+            // press, so the release never reaches the button and the
+            // internal pressed state would stay stuck. Binding `down` to
+            // the current index keeps it in sync with the menu lifecycle.
+            down: Plasmoid.currentIndex === root.windowMenuIndex
+            enabled: root.windowMenuEnabled
             Layout.alignment: Qt.AlignVCenter
             Layout.leftMargin: root.vertical ? 0 : (compactRoot.showAppIcon ? Kirigami.Units.smallSpacing : root.appNameMarginBefore)
             Layout.rightMargin: root.vertical ? 0 : root.appNameMarginAfter
             Layout.topMargin: root.vertical ? (compactRoot.showAppIcon ? Kirigami.Units.smallSpacing : root.appNameMarginBefore) : 0
             Layout.bottomMargin: root.vertical ? root.appNameMarginAfter : 0
+
+            onActivated: Plasmoid.trigger(this, root.windowMenuIndex)
+        }
+
+        // Register the visible representation's name label as the hover
+        // target for switching from an open menu to the window menu (the
+        // popup grabs the mouse, so only C++ can hit-test it).
+        Component.onCompleted: {
+            if (root.compact) {
+                Plasmoid.windowMenuButton = compactAppName
+            }
+        }
+
+        Connections {
+            target: root
+            function onCompactChanged() {
+                if (root.compact) {
+                    Plasmoid.windowMenuButton = compactAppName
+                }
+            }
         }
 
         PlasmaComponents3.ToolButton {
@@ -567,11 +599,38 @@ PlasmoidItem {
                 fontSize: Plasmoid.configuration.appNameFontSize
                 fontFamily: Plasmoid.configuration.appNameFontFamily
                 fontWeight: Plasmoid.configuration.appNameFontWeight
+                hoverCornerRadius: Plasmoid.configuration.hoverCornerRadius
+                // Declarative, like MenuDelegate: the popup grabs the mouse on
+                // press, so the release never reaches the button and the
+                // internal pressed state would stay stuck. Binding `down` to
+                // the current index keeps it in sync with the menu lifecycle.
+                down: Plasmoid.currentIndex === root.windowMenuIndex
+                enabled: root.windowMenuEnabled
                 Layout.alignment: Qt.AlignVCenter
                 Layout.leftMargin: root.vertical ? 0 : (fullRoot.showAppIcon ? Kirigami.Units.smallSpacing : root.appNameMarginBefore)
                 Layout.rightMargin: root.vertical ? 0 : root.appNameMarginAfter
                 Layout.topMargin: root.vertical ? (fullRoot.showAppIcon ? Kirigami.Units.smallSpacing : root.appNameMarginBefore) : 0
                 Layout.bottomMargin: root.vertical ? root.appNameMarginAfter : 0
+
+                onActivated: Plasmoid.trigger(this, root.windowMenuIndex)
+            }
+        }
+
+        // Register the visible representation's name label as the hover
+        // target for switching from an open menu to the window menu (the
+        // popup grabs the mouse, so only C++ can hit-test it).
+        Component.onCompleted: {
+            if (!root.compact) {
+                Plasmoid.windowMenuButton = appNameLabel
+            }
+        }
+
+        Connections {
+            target: root
+            function onCompactChanged() {
+                if (!root.compact) {
+                    Plasmoid.windowMenuButton = appNameLabel
+                }
             }
         }
 

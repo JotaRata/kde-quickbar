@@ -15,3 +15,4 @@ po/*.mo
 /build_user
 /build_user/.qt
 /build_user
+AGENTS.md

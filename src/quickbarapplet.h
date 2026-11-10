@@ -32,6 +32,7 @@ class QuickBarApplet : public Plasma::Applet
     Q_PROPERTY(int currentIndex READ currentIndex NOTIFY currentIndexChanged)
 
     Q_PROPERTY(QQuickItem *buttonGrid READ buttonGrid WRITE setButtonGrid NOTIFY buttonGridChanged)
+    Q_PROPERTY(QQuickItem *windowMenuButton READ windowMenuButton WRITE setWindowMenuButton NOTIFY windowMenuButtonChanged)
     Q_PROPERTY(bool hoverOpensMenu READ hoverOpensMenu WRITE setHoverOpensMenu NOTIFY hoverOpensMenuChanged)
     Q_PROPERTY(int maxMenuCells READ maxMenuCells WRITE setMaxMenuCells NOTIFY maxMenuCellsChanged)
 
@@ -50,6 +51,9 @@ public:
 
     QQuickItem *buttonGrid() const;
     void setButtonGrid(QQuickItem *buttonGrid);
+
+    QQuickItem *windowMenuButton() const;
+    void setWindowMenuButton(QQuickItem *windowMenuButton);
 
     bool hoverOpensMenu() const;
     void setHoverOpensMenu(bool hover);
@@ -70,6 +74,7 @@ Q_SIGNALS:
     void viewChanged();
     void currentIndexChanged();
     void buttonGridChanged();
+    void windowMenuButtonChanged();
     void hoverOpensMenuChanged();
     void maxMenuCellsChanged();
     void requestActivateIndex(int index);
@@ -83,6 +88,11 @@ protected:
 private:
     static constexpr int MaxMenuWidthPx = 600;
     static constexpr int DefaultMaxMenuCells = 15;
+    // Sentinel trigger()/currentIndex value while the application-name
+    // window menu is open: below every model row so it never collides with
+    // one, and distinct from -1 ("no menu open"). Mirrored in QML as
+    // root.windowMenuIndex in main.qml.
+    static constexpr int WindowMenuIndex = -2;
 
     int calculateMaxHeightForCells(QMenu *menu, int maxCells) const;
     int totalContentHeight(QMenu *menu) const;
@@ -126,5 +136,6 @@ private:
     // model-owned menu and must never be deleted or used as a proxy.
     bool m_ownsCurrentMenu = false;
     QPointer<QQuickItem> m_buttonGrid;
+    QPointer<QQuickItem> m_windowMenuButton;
     QPointer<QAbstractItemModel> m_model;
 };
