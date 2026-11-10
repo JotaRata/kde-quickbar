@@ -790,11 +790,20 @@ void QuickBarApplet::trigger(QQuickItem *ctx, int idx)
             // freed/corrupted state and crashes.
             restoreStolenActions();
             if (m_ownsCurrentMenu && m_currentMenu) {
-                m_currentMenu->removeEventFilter(this);
-                if (m_currentMenu->isVisible()) {
-                    m_currentMenu->hide();
+                QMenu *proxy = m_currentMenu.data();
+                proxy->removeEventFilter(this);
+                // trigger() can run from a mouse event that is being delivered
+                // to this very popup (e.g. the pointer leaves an open menu and
+                // hovers the search entry). Destroying it synchronously frees
+                // the widget under Qt's event filters and crashes plasmashell
+                // in QCoreApplicationPrivate::sendThroughObjectEventFilters().
+                // Hide it now so the borrowed menu can take over the popup
+                // grab, then delete it once the event dispatch has unwound.
+                proxy->disconnect(this);
+                if (proxy->isVisible()) {
+                    proxy->hide();
                 }
-                delete m_currentMenu.data();
+                proxy->deleteLater();
             }
             m_currentMenu.clear();
             m_currentMenu = actionMenu;
