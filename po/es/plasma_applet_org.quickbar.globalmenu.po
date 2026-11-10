@@ -7,7 +7,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: quickbar 1.13\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-11-10 02:26-0300\n"
+"POT-Creation-Date: 2026-11-10 20:05-0300\n"
 "PO-Revision-Date: 2026-11-09 00:00-0300\n"
 "Last-Translator: JotaRata <jjbarria.c@gmail.com>\n"
 "Language-Team: Spanish <kde-l10n-es@kde.org>\n"
@@ -29,17 +29,25 @@ msgstr "Buscar…"
 msgid "Desktop"
 msgstr "Escritorio"
 
-#: src/desktopmenu.cpp:25
+#: src/desktopmenu.cpp:36 src/genericmenu.cpp:42
+msgid "&Edit"
+msgstr "&Editar"
+
+#: src/desktopmenu.cpp:40
 msgid "&Places"
 msgstr "&Lugares"
 
-#: src/desktopmenu.cpp:26
+#: src/desktopmenu.cpp:41
 msgid "&Network"
 msgstr "&Red"
 
-#: src/desktopmenu.cpp:28
+#: src/desktopmenu.cpp:43
 msgid "&Tags"
 msgstr "&Etiquetas"
+
+#: src/desktopmenu.cpp:47
+msgid "Display Configuration"
+msgstr "Configuración de la pantalla"
 
 #: src/genericmenu.cpp:37
 msgid "&File"
@@ -48,10 +56,6 @@ msgstr "&Archivo"
 #: src/genericmenu.cpp:38
 msgid "Quit Application"
 msgstr "Salir de la aplicación"
-
-#: src/genericmenu.cpp:42
-msgid "&Edit"
-msgstr "&Editar"
 
 #: src/genericmenu.cpp:43
 msgid "&Undo"

@@ -8,7 +8,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PACKAGE VERSION\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-11-10 02:26-0300\n"
+"POT-Creation-Date: 2026-11-10 20:05-0300\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: LANGUAGE <LL@li.org>\n"
@@ -29,16 +29,24 @@ msgstr ""
 msgid "Desktop"
 msgstr ""
 
-#: src/desktopmenu.cpp:25
+#: src/desktopmenu.cpp:36 src/genericmenu.cpp:42
+msgid "&Edit"
+msgstr ""
+
+#: src/desktopmenu.cpp:40
 msgid "&Places"
 msgstr ""
 
-#: src/desktopmenu.cpp:26
+#: src/desktopmenu.cpp:41
 msgid "&Network"
 msgstr ""
 
-#: src/desktopmenu.cpp:28
+#: src/desktopmenu.cpp:43
 msgid "&Tags"
+msgstr ""
+
+#: src/desktopmenu.cpp:47
+msgid "Display Configuration"
 msgstr ""
 
 #: src/genericmenu.cpp:37
@@ -47,10 +55,6 @@ msgstr ""
 
 #: src/genericmenu.cpp:38
 msgid "Quit Application"
-msgstr ""
-
-#: src/genericmenu.cpp:42
-msgid "&Edit"
 msgstr ""
 
 #: src/genericmenu.cpp:43

@@ -18,6 +18,8 @@ depends=(
     'kio'
     'kjobwidgets'
     'kirigami'
+    'kservice'
+    'plasma-activities'
 )
 makedepends=(
     'cmake'

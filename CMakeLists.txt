@@ -22,11 +22,13 @@ find_package(Qt6 REQUIRED COMPONENTS Core)
 find_package(Qt6 REQUIRED COMPONENTS Widgets WidgetsPrivate Quick DBus)
 find_package(X11 QUIET COMPONENTS Xtst)
 # Plasma::Plasma links KF6::ConfigCore, KF6::CoreAddons, etc. — find them before Plasma
-find_package(KF6 REQUIRED COMPONENTS Config CoreAddons I18n WindowSystem)
+find_package(KF6 REQUIRED COMPONENTS Config CoreAddons I18n Service WindowSystem)
 # Desktop menu: Places model (KFilePlacesModel), URL opener (KIO::OpenUrlJob)
 # and its error-dialog delegate. Distributions package KIO's component
 # targets under the single umbrella config (KF6KIO).
 find_package(KF6 REQUIRED COMPONENTS KIO JobWidgets)
+# Desktop menu: current activity to pick the desktop containment on this screen.
+find_package(PlasmaActivities REQUIRED)
 find_package(Plasma 6.5 REQUIRED)
 find_package(LibTaskManager REQUIRED)
 
@@ -93,7 +95,10 @@ target_link_libraries(org.quickbar.globalmenu PRIVATE
     Qt::Qml
     Qt::DBus
     Plasma::Plasma
+    Plasma::Activities
     KF6::I18n
+    KF6::ConfigCore
+    KF6::Service
     KF6::WindowSystem
     KF6::KIOFileWidgets
     KF6::KIOGui
