@@ -78,6 +78,11 @@ public:
     bool showDesktopMenu() const;
     void setShowDesktopMenu(bool show);
 
+    // Containment the widget lives in (usually the panel). Forwarded to
+    // the desktop menu so its Edit dropdown can mirror the desktop
+    // containment on the same screen and current activity.
+    void setContainment(Plasma::Containment *containment);
+
     bool enableGenericMenu() const;
     void setEnableGenericMenu(bool enable);
 
@@ -245,6 +250,7 @@ private:
     QPointer<QMenu> m_screensMenu;
     TaskManager::VirtualDesktopInfo *m_virtualDesktopInfo = nullptr;
     std::unique_ptr<DesktopMenu> m_desktopMenu;
+    QPointer<Plasma::Containment> m_containment;
     MenuShortcutBridge *m_shortcutBridge = nullptr;
     QPointer<QMenu> m_menu;
     QPointer<QAction> m_searchAction;

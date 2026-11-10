@@ -1436,14 +1436,28 @@ void AppMenuModel::ensureDesktopMenuCreated()
     if (!m_desktopMenu) {
         m_desktopMenu = std::make_unique<DesktopMenu>(this);
     }
+    m_desktopMenu->setAnchorContainment(m_containment);
+}
+
+void AppMenuModel::setContainment(Plasma::Containment *containment)
+{
+    if (m_containment == containment) {
+        return;
+    }
+    m_containment = containment;
+    if (m_desktopMenu) {
+        m_desktopMenu->setAnchorContainment(containment);
+    }
 }
 
 void AppMenuModel::applyDesktopMenu()
 {
     ensureDesktopMenuCreated();
     // Places may have changed while the dropdown was borrowed by an open
-    // popup; pick up any deferred rebuild now.
+    // popup; pick up any deferred rebuild now. Same for the desktop
+    // actions, which may have appeared after the last update.
     m_desktopMenu->flushPendingRebuild();
+    m_desktopMenu->refreshDesktopActions();
 
     if (m_usingDesktopMenu && m_menu == m_desktopMenu->menu() && m_menuAvailable) {
         setVisible(true);

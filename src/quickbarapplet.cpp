@@ -30,6 +30,8 @@
 #include <QtWidgets/private/qmenu_p.h>
 #include <KConfigGroup>
 
+#include <Plasma/Containment>
+
 class MenuClampStyle : public QProxyStyle
 {
 public:
@@ -183,6 +185,15 @@ QuickBarApplet::QuickBarApplet(QObject *parent, const KPluginMetaData &data, con
     connect(this, &Applet::destroyedChanged, this, [this](bool destroyed) {
         onAppletDestroyedChanged(this, destroyed);
     });
+
+    // The desktop menu mirrors the desktop containment on the widget's
+    // screen. Follow containment changes (e.g. the applet being moved
+    // into a panel) so it never targets a stale containment.
+    connect(this, &Plasma::Applet::containmentChanged, this, [this](Plasma::Containment *containment) {
+        if (auto *menuModel = qobject_cast<AppMenuModel *>(m_model)) {
+            menuModel->setContainment(containment);
+        }
+    });
 }
 
 QuickBarApplet::~QuickBarApplet()
@@ -266,6 +277,9 @@ void QuickBarApplet::setModel(QAbstractItemModel *model)
         }
         m_model = model;
         if (m_model) {
+            if (auto *menuModel = qobject_cast<AppMenuModel *>(m_model)) {
+                menuModel->setContainment(containment());
+            }
             connect(m_model, &QAbstractItemModel::modelReset, this, [this] {
                 if (m_currentMenu && m_currentMenu->isVisible()) {
                     m_currentMenu->hide();

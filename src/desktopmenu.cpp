@@ -6,15 +6,23 @@
 
 #include "desktopmenu.h"
 
+#include <KAuthorized>
 #include <KDialogJobUiDelegate>
 #include <KFilePlacesModel>
+#include <KIO/ApplicationLauncherJob>
 #include <KIO/OpenUrlJob>
 #include <KLocalizedString>
+#include <KService>
 
 #include <QAbstractItemModel>
 #include <QAction>
 #include <QIcon>
 #include <QMenu>
+#include <QQmlListProperty>
+
+#include <Plasma/Corona>
+
+#include <plasmaactivities/consumer.h>
 
 DesktopMenu::DesktopMenu(QObject *parent)
     : QObject(parent)
@@ -22,11 +30,27 @@ DesktopMenu::DesktopMenu(QObject *parent)
     m_menu = std::make_unique<QMenu>();
     m_menu->setObjectName(QStringLiteral("quickbar-desktop-menu"));
 
+    // Mirrors Plasma's desktop context menu (the "Standard Menu"
+    // containment action): edit mode, wallpaper actions, desktop
+    // configuration and display configuration.
+    m_editMenu = m_menu->addMenu(i18n("&Edit"));
+    m_editMenu->menuAction()->setVisible(false);
+    connect(m_editMenu, &QMenu::aboutToShow, this, &DesktopMenu::rebuildEditMenu);
+
     m_placesMenu = m_menu->addMenu(i18n("&Places"));
     m_networkMenu = m_placesMenu->addMenu(i18n("&Network"));
     m_networkMenu->setIcon(QIcon::fromTheme(QStringLiteral("folder-network")));
     m_tagsMenu = m_placesMenu->addMenu(i18n("&Tags"));
     m_tagsMenu->setIcon(QIcon::fromTheme(QStringLiteral("tag")));
+
+    m_displayConfigurationAction =
+        new QAction(QIcon::fromTheme(QStringLiteral("preferences-desktop-display")), i18n("Display Configuration"), this);
+    connect(m_displayConfigurationAction, &QAction::triggered, this, [] {
+        if (auto service = KService::serviceByStorageId(QStringLiteral("kcm_kscreen"))) {
+            auto *job = new KIO::ApplicationLauncherJob(service);
+            job->start();
+        }
+    });
 
     m_placesModel = new KFilePlacesModel(this);
 
@@ -63,6 +87,9 @@ DesktopMenu::~DesktopMenu()
 {
     // Drop the actions while they are still ours, before the menus die
     // with this object.
+    if (m_editMenu) {
+        m_editMenu->clear();
+    }
     if (m_placesMenu) {
         m_placesMenu->clear();
     }
@@ -74,6 +101,121 @@ DesktopMenu::~DesktopMenu()
 QMenu *DesktopMenu::menu() const
 {
     return m_menu.get();
+}
+
+void DesktopMenu::setAnchorContainment(Plasma::Containment *containment)
+{
+    if (m_anchorContainment == containment) {
+        return;
+    }
+    if (m_anchorContainment) {
+        disconnect(m_anchorContainment, nullptr, this, nullptr);
+    }
+    m_anchorContainment = containment;
+    if (containment) {
+        connect(containment, &Plasma::Containment::screenChanged, this, &DesktopMenu::refreshDesktopActions, Qt::UniqueConnection);
+        if (Plasma::Corona *corona = containment->corona()) {
+            // A desktop containment may appear (activity added, screen
+            // hotplugged) after the anchor was set.
+            connect(corona, &Plasma::Corona::containmentAdded, this, &DesktopMenu::refreshDesktopActions, Qt::UniqueConnection);
+            connect(corona, &Plasma::Corona::containmentCreated, this, &DesktopMenu::refreshDesktopActions, Qt::UniqueConnection);
+        }
+    }
+    refreshDesktopActions();
+}
+
+void DesktopMenu::refreshDesktopActions()
+{
+    rebuildEditMenu();
+}
+
+Plasma::Containment *DesktopMenu::desktopContainment() const
+{
+    Plasma::Containment *anchor = m_anchorContainment;
+    if (!anchor) {
+        return nullptr;
+    }
+    // The widget can also live directly on the desktop.
+    if (anchor->containmentType() == Plasma::Containment::Desktop) {
+        return anchor;
+    }
+    Plasma::Corona *corona = anchor->corona();
+    if (!corona) {
+        return nullptr;
+    }
+    // Desktop containments are per screen and per activity; the panel's
+    // screen and the current activity select the one whose context menu
+    // the Edit dropdown mirrors. An empty default plugin avoids creating
+    // a containment as a side effect.
+    const QString activity = KActivities::Consumer().currentActivity();
+    return corona->containmentForScreen(anchor->screen(), activity, QString());
+}
+
+void DesktopMenu::rebuildEditMenu()
+{
+    if (!m_editMenu || m_editMenu->isVisible()) {
+        return;
+    }
+
+    m_editMenu->clear();
+
+    Plasma::Containment *desktop = desktopContainment();
+    if (!desktop) {
+        m_editMenu->menuAction()->setVisible(false);
+        return;
+    }
+
+    // "Enter Edit Mode"/"Exit Edit Mode". DesktopView installs this action
+    // on the desktop containment; it already flips its own text, icon and
+    // enabled state. Fall back to the corona-wide action if the view has
+    // not installed it yet.
+    QAction *editModeAction = desktop->internalAction(QStringLiteral("desktop edit mode"));
+    if (!editModeAction && desktop->corona()) {
+        editModeAction = desktop->corona()->action(QStringLiteral("edit mode"));
+    }
+    if (editModeAction) {
+        m_editMenu->addAction(editModeAction);
+    }
+
+    // Wallpaper-provided actions: "Open Wallpaper Image" and, for the
+    // slideshow plugin, "Next Wallpaper Image". Same source as Plasma's
+    // own desktop context menu.
+    bool haveWallpaperActions = false;
+    QObject *wallpaper = desktop->wallpaperPlugin().isEmpty() ? nullptr : desktop->property("wallpaperGraphicsObject").value<QObject *>();
+    if (wallpaper) {
+        QQmlListProperty<QAction> wallpaperActions = wallpaper->property("contextualActions").value<QQmlListProperty<QAction>>();
+        const int count = wallpaperActions.count(&wallpaperActions);
+        for (int i = 0; i < count; ++i) {
+            QAction *action = wallpaperActions.at(&wallpaperActions, i);
+            if (!action) {
+                continue;
+            }
+            if (!haveWallpaperActions && !m_editMenu->isEmpty()) {
+                m_editMenu->addSeparator();
+            }
+            m_editMenu->addAction(action);
+            haveWallpaperActions = true;
+        }
+    }
+
+    // "Desktop and Wallpaper" (the containment's configure action, labelled
+    // by the desktop containment itself) and "Display Configuration".
+    QAction *configureAction = desktop->internalAction(QStringLiteral("configure"));
+    const bool displayConfigurationAvailable =
+        KAuthorized::authorizeControlModule(QStringLiteral("kcm_kscreen.desktop")) && KService::serviceByStorageId(QStringLiteral("kcm_kscreen"));
+    if (configureAction || displayConfigurationAvailable) {
+        if (!m_editMenu->isEmpty()) {
+            m_editMenu->addSeparator();
+        }
+        if (configureAction) {
+            m_editMenu->addAction(configureAction);
+        }
+        if (displayConfigurationAvailable) {
+            m_editMenu->addAction(m_displayConfigurationAction);
+        }
+    }
+
+    m_editMenu->menuAction()->setVisible(!m_editMenu->isEmpty());
 }
 
 void DesktopMenu::flushPendingRebuild()
