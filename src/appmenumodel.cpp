@@ -9,6 +9,7 @@
 #include "quickbarapplet.h"
 
 #include "genericmenu.h"
+#include "desktopmenu.h"
 #include "menushortcutsender.h"
 
 #include <QDBusConnection>
@@ -554,7 +555,7 @@ void AppMenuModel::onActiveWindowChanged()
             }
             setApplicationIcon(iconVar);
         } else if (m_showDesktopMenu) {
-            setApplicationName(i18n("Plasma"));
+            setApplicationName(i18n("Desktop"));
             setApplicationIcon(QStringLiteral("plasma"));
         } else {
             setApplicationName(QString());
@@ -580,8 +581,8 @@ void AppMenuModel::onActiveWindowChanged()
             applyGenericMenu();
             return;
         }
-    } else if (m_showDesktopMenu && shouldUseGenericMenu(activeTaskIndex)) {
-        applyGenericMenu();
+    } else if (m_showDesktopMenu) {
+        applyDesktopMenu();
         return;
     }
 
@@ -594,7 +595,9 @@ bool AppMenuModel::shouldUseGenericMenu(const QModelIndex &activeTaskIndex) cons
         return false;
     }
     if (!activeTaskIndex.isValid()) {
-        return m_showDesktopMenu;
+        // The desktop shows its own Places menu; the generic menu is
+        // only a fallback for application windows without a menu.
+        return false;
     }
     return true;
 }
@@ -602,6 +605,7 @@ bool AppMenuModel::shouldUseGenericMenu(const QModelIndex &activeTaskIndex) cons
 void AppMenuModel::clearApplicationMenu()
 {
     m_usingGenericMenu = false;
+    m_usingDesktopMenu = false;
     setMenuAvailable(false);
     setVisible(false);
 
@@ -794,6 +798,39 @@ void AppMenuModel::applyGenericMenu()
     Q_EMIT modelNeedsUpdate();
 }
 
+void AppMenuModel::ensureDesktopMenuCreated()
+{
+    if (!m_desktopMenu) {
+        m_desktopMenu = std::make_unique<DesktopMenu>(this);
+    }
+}
+
+void AppMenuModel::applyDesktopMenu()
+{
+    ensureDesktopMenuCreated();
+    // Places may have changed while the dropdown was borrowed by an open
+    // popup; pick up any deferred rebuild now.
+    m_desktopMenu->flushPendingRebuild();
+
+    if (m_usingDesktopMenu && m_menu == m_desktopMenu->menu() && m_menuAvailable) {
+        setVisible(true);
+        return;
+    }
+
+    m_usingGenericMenu = false;
+    m_usingDesktopMenu = true;
+    m_serviceName.clear();
+    m_menuObjectPath.clear();
+    m_serviceWatcher->setWatchedServices({});
+    m_importer.reset();
+
+    m_menu = m_desktopMenu->menu();
+
+    setMenuAvailable(true);
+    setVisible(true);
+    Q_EMIT modelNeedsUpdate();
+}
+
 QHash<int, QByteArray> AppMenuModel::roleNames() const
 {
     QHash<int, QByteArray> roleNames;
@@ -875,6 +912,7 @@ void AppMenuModel::updateApplicationMenu(const QString &serviceName, const QStri
         clearApplicationMenu();
     } else {
         m_usingGenericMenu = false;
+        m_usingDesktopMenu = false;
         m_serviceName = serviceName;
         m_menuObjectPath = menuObjectPath;
         m_serviceWatcher->setWatchedServices(QStringList({m_serviceName}));

@@ -7,7 +7,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: quickbar 1.13\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-11-09 00:00-0300\n"
+"POT-Creation-Date: 2026-11-09 23:32-0300\n"
 "PO-Revision-Date: 2026-11-09 00:00-0300\n"
 "Last-Translator: JotaRata <jjbarria.c@gmail.com>\n"
 "Language-Team: Spanish <kde-l10n-es@kde.org>\n"
@@ -17,17 +17,21 @@ msgstr ""
 "Content-Transfer-Encoding: 8bit\n"
 "Plural-Forms: nplurals=2; plural=n != 1;\n"
 
-#: src/appmenumodel.cpp:158
+#: src/appmenumodel.cpp:159
 msgid "Search"
 msgstr "Buscar"
 
-#: src/appmenumodel.cpp:165
+#: src/appmenumodel.cpp:166
 msgid "Search…"
 msgstr "Buscar…"
 
-#: src/appmenumodel.cpp:557
-msgid "Plasma"
-msgstr "Plasma"
+#: src/appmenumodel.cpp:558
+msgid "Desktop"
+msgstr "Escritorio"
+
+#: src/desktopmenu.cpp:30
+msgid "&Places"
+msgstr "&Lugares"
 
 #: src/genericmenu.cpp:37
 msgid "&File"
@@ -418,3 +422,6 @@ msgstr "General"
 msgctxt "@info:usagetip"
 msgid "Open a menu"
 msgstr "Abrir un menú"
+
+#~ msgid "Plasma"
+#~ msgstr "Plasma"

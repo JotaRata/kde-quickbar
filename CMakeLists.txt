@@ -23,6 +23,10 @@ find_package(Qt6 REQUIRED COMPONENTS Widgets WidgetsPrivate Quick DBus)
 find_package(X11 QUIET COMPONENTS Xtst)
 # Plasma::Plasma links KF6::ConfigCore, KF6::CoreAddons, etc. — find them before Plasma
 find_package(KF6 REQUIRED COMPONENTS Config CoreAddons I18n WindowSystem)
+# Desktop menu: Places model (KFilePlacesModel), URL opener (KIO::OpenUrlJob)
+# and its error-dialog delegate. Distributions package KIO's component
+# targets under the single umbrella config (KF6KIO).
+find_package(KF6 REQUIRED COMPONENTS KIO JobWidgets)
 find_package(Plasma 6.5 REQUIRED)
 find_package(LibTaskManager REQUIRED)
 
@@ -55,6 +59,8 @@ plasma_add_applet(org.quickbar.globalmenu
         src/appmenumodel.h
         src/genericmenu.cpp
         src/genericmenu.h
+        src/desktopmenu.cpp
+        src/desktopmenu.h
         src/menushortcutsender.cpp
         src/menushortcutsender.h
     RESOURCES
@@ -89,6 +95,9 @@ target_link_libraries(org.quickbar.globalmenu PRIVATE
     Plasma::Plasma
     KF6::I18n
     KF6::WindowSystem
+    KF6::KIOFileWidgets
+    KF6::KIOGui
+    KF6::JobWidgets
     PW::LibTaskManager
     dbusmenuqt
 )

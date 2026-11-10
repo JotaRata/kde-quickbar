@@ -15,6 +15,8 @@ depends=(
     'kcoreaddons'
     'ki18n'
     'kwindowsystem'
+    'kio'
+    'kjobwidgets'
     'kirigami'
 )
 makedepends=(

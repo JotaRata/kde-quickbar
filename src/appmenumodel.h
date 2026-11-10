@@ -22,6 +22,7 @@ class QModelIndex;
 class QDBusServiceWatcher;
 class KDBusMenuImporter;
 class MenuShortcutBridge;
+class DesktopMenu;
 
 class AppMenuModel : public QAbstractListModel
 {
@@ -132,6 +133,7 @@ private:
     bool m_enableGenericMenu = true;
     bool m_enableMenuSearch = true;
     bool m_usingGenericMenu = false;
+    bool m_usingDesktopMenu = false;
     QString m_applicationName;
     QVariant m_applicationIcon;
     QString m_excludedItemsRegex;
@@ -150,6 +152,8 @@ private:
     void refreshActiveWindowMaximized();
     void ensureGenericMenuCreated();
     void applyGenericMenu();
+    void ensureDesktopMenuCreated();
+    void applyDesktopMenu();
     void clearApplicationMenu();
     bool shouldUseGenericMenu(const QModelIndex &activeTaskIndex) const;
     void quitActiveTask();
@@ -162,6 +166,7 @@ private:
 
     std::unique_ptr<QMenu> m_searchMenu;
     std::unique_ptr<QMenu> m_genericMenu;
+    std::unique_ptr<DesktopMenu> m_desktopMenu;
     MenuShortcutBridge *m_shortcutBridge = nullptr;
     QPointer<QMenu> m_menu;
     QPointer<QAction> m_searchAction;
