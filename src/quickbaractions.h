@@ -37,6 +37,7 @@ constexpr auto systemSettings = "systemSettings";
 constexpr auto lockScreen = "lockScreen";
 constexpr auto logout = "logout";
 constexpr auto sleep = "sleep";
+constexpr auto hibernate = "hibernate";
 constexpr auto restart = "restart";
 constexpr auto shutdown = "shutdown";
 } // namespace QuickBarActions

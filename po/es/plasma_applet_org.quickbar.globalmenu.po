@@ -7,7 +7,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: quickbar 1.13\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-11-10 02:26-0300\n"
+"POT-Creation-Date: 2026-11-10 04:05-0300\n"
 "PO-Revision-Date: 2026-11-09 00:00-0300\n"
 "Last-Translator: JotaRata <jjbarria.c@gmail.com>\n"
 "Language-Team: Spanish <kde-l10n-es@kde.org>\n"
@@ -29,25 +29,25 @@ msgstr "Buscar…"
 msgid "Desktop"
 msgstr "Escritorio"
 
-#: src/appmenumodel.cpp:1074
+#: src/appmenumodel.cpp:1115
 msgid "&All Desktops"
 msgstr "&Todos los escritorios"
 
-#: src/appmenumodel.cpp:1135
+#: src/appmenumodel.cpp:1176
 msgid "Move to %1"
 msgstr "Mover a %1"
 
-#: src/appmenumodel.cpp:1151
+#: src/appmenumodel.cpp:1192
 msgctxt "Create a new desktop and add the window to that desktop"
 msgid "Add to &New Desktop"
 msgstr "Añadir a &Nuevo escritorio"
 
-#: src/appmenumodel.cpp:1184
+#: src/appmenumodel.cpp:1225
 msgctxt "Create a new desktop and move the window to that desktop"
 msgid "Move to New Desktop"
 msgstr "Mover a &Nuevo escritorio"
 
-#: src/appmenumodel.cpp:1227
+#: src/appmenumodel.cpp:1268
 msgctxt ""
 "@item:inmenu List of all Screens to send a window to. First argument is a "
 "number, second the output identifier. E.g. Screen 1 (HDMI1)"
@@ -66,15 +66,7 @@ msgstr "&Red"
 msgid "&Tags"
 msgstr "&Etiquetas"
 
-#: src/genericmenu.cpp:37
-msgid "&File"
-msgstr "&Archivo"
-
-#: src/genericmenu.cpp:38
-msgid "Quit Application"
-msgstr "Salir de la aplicación"
-
-#: src/genericmenu.cpp:42
+#: src/genericmenu.cpp:31
 msgid "&Edit"
 msgstr "&Editar"
 
@@ -110,31 +102,35 @@ msgstr "A&yuda"
 msgid "&About"
 msgstr "&Acerca de"
 
-#: src/systemmenu.cpp:37
+#: src/systemmenu.cpp:36
 msgid "&About This System"
 msgstr "&Acerca de este sistema"
 
-#: src/systemmenu.cpp:42
+#: src/systemmenu.cpp:40
 msgid "&System Settings"
 msgstr "&Preferencias del sistema"
 
-#: src/systemmenu.cpp:44
+#: src/systemmenu.cpp:41
 msgid "&Lock Screen"
 msgstr "&Bloquear la pantalla"
 
-#: src/systemmenu.cpp:49
+#: src/systemmenu.cpp:45
 msgid "Log &Out"
 msgstr "&Cerrar sesión"
 
-#: src/systemmenu.cpp:51
+#: src/systemmenu.cpp:46
 msgid "Sl&eep"
 msgstr "&Suspender"
 
-#: src/systemmenu.cpp:53
+#: src/systemmenu.cpp:47
+msgid "&Hibernate"
+msgstr "&Hibernar"
+
+#: src/systemmenu.cpp:48
 msgid "&Restart"
 msgstr "&Reiniciar"
 
-#: src/systemmenu.cpp:55
+#: src/systemmenu.cpp:49
 msgid "Sh&ut Down"
 msgstr "Apa&gar"
 
@@ -198,6 +194,9 @@ msgstr "Configurar las &preferencias especiales de la aplicación…"
 msgid "About QuickBar"
 msgstr "Acerca de QuickBar"
 
+#: src/windowmenu.cpp:92
+msgid "Quit Application"
+msgstr "Salir de la aplicación"
 
 #: qml/AppNameLabel.qml:44
 msgctxt "@info:usagetip"
@@ -551,6 +550,8 @@ msgctxt "@info:usagetip"
 msgid "Open a menu"
 msgstr "Abrir un menú"
 
+#~ msgid "&File"
+#~ msgstr "&Archivo"
 
 #~ msgid "&View"
 #~ msgstr "&Ver"

@@ -860,13 +860,89 @@ void AppMenuModel::logoutSession()
 
 void AppMenuModel::sleepSession()
 {
-    // Suspend to RAM through powerdevil's Solid action; the same path the
-    // battery and logout applets use.
-    QDBusInterface suspend(QStringLiteral("org.kde.Solid.PowerManagement"),
-                           QStringLiteral("/org/kde/Solid/PowerManagement/Actions/SuspendSession"),
-                           QStringLiteral("org.kde.Solid.PowerManagement.Actions.SuspendSession"),
-                           QDBusConnection::sessionBus());
-    suspend.call(QStringLiteral("suspendToRam"));
+    // powerdevil's freedesktop PowerManagement Suspend() runs the
+    // SuspendSession action with the user's profile sleep mode (powerdevilrc
+    // SleepMode: suspend-to-ram, hybrid sleep or suspend-then-hibernate) —
+    // exactly what their power button does — and honors session inhibits.
+    // Without powerdevil, fall back to logind's plain suspend.
+    QDBusInterface fdo(QStringLiteral("org.freedesktop.PowerManagement"),
+                       QStringLiteral("/org/freedesktop/PowerManagement"),
+                       QStringLiteral("org.freedesktop.PowerManagement"),
+                       QDBusConnection::sessionBus());
+    if (fdo.isValid()) {
+        fdo.call(QStringLiteral("Suspend"));
+        return;
+    }
+    QDBusInterface login1(QStringLiteral("org.freedesktop.login1"),
+                          QStringLiteral("/org/freedesktop/login1"),
+                          QStringLiteral("org.freedesktop.login1.Manager"),
+                          QDBusConnection::systemBus());
+    login1.call(QStringLiteral("Suspend"), false);
+}
+
+void AppMenuModel::hibernateSession()
+{
+    // Canonical hibernate through powerdevil first (polkit and inhibit
+    // handling, capability-checked); fall back to logind when powerdevil is
+    // not running: plain hibernate when logind allows it, otherwise
+    // suspend-then-hibernate as the only hibernating flow some systems
+    // permit (sleep.conf Allow flags).
+    QDBusInterface fdo(QStringLiteral("org.freedesktop.PowerManagement"),
+                       QStringLiteral("/org/freedesktop/PowerManagement"),
+                       QStringLiteral("org.freedesktop.PowerManagement"),
+                       QDBusConnection::sessionBus());
+    if (fdo.isValid()) {
+        const QDBusMessage canHibernate = fdo.call(QStringLiteral("CanHibernate"));
+        if (canHibernate.type() == QDBusMessage::ReplyMessage
+            && canHibernate.arguments().value(0).toBool()) {
+            fdo.call(QStringLiteral("Hibernate"));
+            return;
+        }
+    }
+
+    QDBusInterface login1(QStringLiteral("org.freedesktop.login1"),
+                          QStringLiteral("/org/freedesktop/login1"),
+                          QStringLiteral("org.freedesktop.login1.Manager"),
+                          QDBusConnection::systemBus());
+    if (login1.call(QStringLiteral("CanHibernate")).arguments().value(0).toString() != QLatin1String("no")) {
+        login1.call(QStringLiteral("Hibernate"), false);
+    } else if (login1.call(QStringLiteral("CanSuspendThenHibernate")).arguments().value(0).toString() != QLatin1String("no")) {
+        login1.call(QStringLiteral("SuspendThenHibernate"), false);
+    }
+}
+
+bool AppMenuModel::powerDevilCanDo(const char *method)
+{
+    QDBusInterface fdo(QStringLiteral("org.freedesktop.PowerManagement"),
+                       QStringLiteral("/org/freedesktop/PowerManagement"),
+                       QStringLiteral("org.freedesktop.PowerManagement"),
+                       QDBusConnection::sessionBus());
+    if (!fdo.isValid()) {
+        return false;
+    }
+    const QDBusMessage reply = fdo.call(QLatin1String(method));
+    return reply.type() == QDBusMessage::ReplyMessage && reply.arguments().value(0).toBool();
+}
+
+bool AppMenuModel::logindAllows(const char *method)
+{
+    QDBusInterface login1(QStringLiteral("org.freedesktop.login1"),
+                          QStringLiteral("/org/freedesktop/login1"),
+                          QStringLiteral("org.freedesktop.login1.Manager"),
+                          QDBusConnection::systemBus());
+    return login1.call(QLatin1String(method)).arguments().value(0).toString() != QLatin1String("no");
+}
+
+bool AppMenuModel::sleepAvailable()
+{
+    return powerDevilCanDo("CanSuspend") || powerDevilCanDo("CanSuspendThenHibernate")
+        || logindAllows("CanSuspend");
+}
+
+bool AppMenuModel::hibernateAvailable()
+{
+    return powerDevilCanDo("CanHibernate") || logindAllows("CanHibernate")
+        || logindAllows("CanSuspendThenHibernate");
 }
 
 void AppMenuModel::restartSession()
@@ -924,6 +1000,8 @@ void AppMenuModel::wireMenuActions(QMenu *menu)
             connect(action, &QAction::triggered, this, &AppMenuModel::logoutSession);
         } else if (actionId == QLatin1String(QuickBarActions::sleep)) {
             connect(action, &QAction::triggered, this, &AppMenuModel::sleepSession);
+        } else if (actionId == QLatin1String(QuickBarActions::hibernate)) {
+            connect(action, &QAction::triggered, this, &AppMenuModel::hibernateSession);
         } else if (actionId == QLatin1String(QuickBarActions::restart)) {
             connect(action, &QAction::triggered, this, &AppMenuModel::restartSession);
         } else if (actionId == QLatin1String(QuickBarActions::shutdown)) {
@@ -1002,6 +1080,7 @@ QMenu *AppMenuModel::windowMenu()
 QMenu *AppMenuModel::systemMenu()
 {
     ensureSystemMenuCreated();
+    updateSystemMenuState();
     return m_systemMenu.get();
 }
 
@@ -1010,6 +1089,28 @@ void AppMenuModel::ensureSystemMenuCreated()
     if (!m_systemMenu) {
         m_systemMenu.reset(SystemMenu::create());
         wireMenuActions(m_systemMenu.get());
+        const auto actions = m_systemMenu->findChildren<QAction *>();
+        for (QAction *action : actions) {
+            const QString actionId = action->property(QuickBarActions::property).toString();
+            if (actionId == QLatin1String(QuickBarActions::sleep)) {
+                m_sleepAction = action;
+            } else if (actionId == QLatin1String(QuickBarActions::hibernate)) {
+                m_hibernateAction = action;
+            }
+        }
+    }
+}
+
+void AppMenuModel::updateSystemMenuState()
+{
+    // Availability is re-checked on every open: the capability answers
+    // depend on powerdevil/logind state (sleep.conf Allow flags, swap
+    // layout, running services), not on anything static.
+    if (m_sleepAction) {
+        m_sleepAction->setVisible(sleepAvailable());
+    }
+    if (m_hibernateAction) {
+        m_hibernateAction->setVisible(hibernateAvailable());
     }
 }
 

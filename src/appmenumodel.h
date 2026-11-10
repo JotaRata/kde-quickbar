@@ -194,6 +194,16 @@ private:
     void lockScreen();
     void logoutSession();
     void sleepSession();
+    // Hibernate through powerdevil, falling back to logind (see
+    // hibernateAvailable()).
+    void hibernateSession();
+    // Availability checks for the Sleep/Hibernate system menu entries:
+    // powerdevil's freedesktop PowerManagement capability methods, falling
+    // back to logind's Can* checks ("no" means not allowed).
+    bool powerDevilCanDo(const char *method);
+    bool logindAllows(const char *method);
+    bool sleepAvailable();
+    bool hibernateAvailable();
     void restartSession();
     void shutdownSession();
     // Connect actions carrying the quickbar action properties to the
@@ -207,6 +217,9 @@ private:
     // Create (once) and wire the system menu; it is static — no per-task
     // state to refresh.
     void ensureSystemMenuCreated();
+    // Show/hide the power entries of the system menu by re-checking
+    // availability (powerdevil/logind capability queries) on each open.
+    void updateSystemMenuState();
     // Refresh the window menu (if created) for the current active task.
     void updateWindowMenuState();
     // Rebuild the Desktops submenu (VirtualDesktopInfo desktop ids/names,
@@ -224,6 +237,9 @@ private:
     std::unique_ptr<QMenu> m_genericMenu;
     std::unique_ptr<QMenu> m_windowMenu;
     std::unique_ptr<QMenu> m_systemMenu;
+    // Sleep/Hibernate entries of the system menu, for the availability check.
+    QPointer<QAction> m_sleepAction;
+    QPointer<QAction> m_hibernateAction;
     // Dynamic submenus of the window menu (owned by m_windowMenu).
     QPointer<QMenu> m_desktopsMenu;
     QPointer<QMenu> m_screensMenu;
