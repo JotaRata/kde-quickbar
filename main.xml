@@ -105,7 +105,7 @@
       <default>true</default>
     </entry>
     <entry name="showDesktopMenu" type="Bool">
-      <label>Show the generic menu bar on the desktop</label>
+      <label>Show the menu bar on the desktop</label>
       <default>true</default>
     </entry>
     <entry name="hoverOpensMenu" type="Bool">

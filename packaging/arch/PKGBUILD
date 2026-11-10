@@ -15,7 +15,11 @@ depends=(
     'kcoreaddons'
     'ki18n'
     'kwindowsystem'
+    'kio'
+    'kjobwidgets'
     'kirigami'
+    'kservice'
+    'plasma-activities'
 )
 makedepends=(
     'cmake'
