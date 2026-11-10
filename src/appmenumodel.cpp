@@ -160,6 +160,7 @@ AppMenuModel::AppMenuModel(QObject *parent)
     m_searchAction->setObjectName(QStringLiteral("appmenu"));
 
     m_searchMenu.reset(new QMenu);
+    m_searchMenu->setProperty(SearchMenuProperty, true);
     auto searchAction = new QWidgetAction(this);
     auto searchBar = new QLineEdit;
     searchBar->setClearButtonEnabled(true);
@@ -173,11 +174,19 @@ AppMenuModel::AppMenuModel(QObject *parent)
         insertSearchActionsIntoMenu(searchBar->text());
     });
     connect(searchBar, &QLineEdit::returnPressed, this, [this]() mutable {
-        if (!m_currentSearchActions.empty()) {
-            m_currentSearchActions.constFirst()->trigger();
+        if (!m_currentSearchActions.isEmpty()) {
+            if (QAction *action = m_currentSearchActions.constFirst().data()) {
+                action->trigger();
+            }
         }
     });
     connect(this, &AppMenuModel::modelNeedsUpdate, searchBar, [this, searchBar]() mutable {
+        insertSearchActionsIntoMenu(searchBar->text());
+    });
+    connect(m_searchMenu.get(), &QMenu::aboutToShow, this, [this, searchBar]() {
+        // The query text survives between openings, but the result actions may
+        // have been left over from an older menu state. Re-run the filter so
+        // reopening the dropdown never shows stale/unfiltered entries.
         insertSearchActionsIntoMenu(searchBar->text());
     });
     connect(m_searchMenu.get(), &QMenu::aboutToShow, searchBar, [searchBar]() {
@@ -850,6 +859,7 @@ QHash<int, QByteArray> AppMenuModel::roleNames() const
     QHash<int, QByteArray> roleNames;
     roleNames[MenuRole] = QByteArrayLiteral("activeMenu");
     roleNames[ActionRole] = QByteArrayLiteral("activeActions");
+    roleNames[SearchRole] = QByteArrayLiteral("isSearch");
     return roleNames;
 }
 
@@ -875,6 +885,8 @@ QVariant AppMenuModel::data(const QModelIndex &index, int role) const
             return QString();
         } else if (role == ActionRole) {
             return QVariant::fromValue(m_menu->menuAction());
+        } else if (role == SearchRole) {
+            return false;
         }
     }
 
@@ -889,6 +901,8 @@ QVariant AppMenuModel::data(const QModelIndex &index, int role) const
             return m_searchAction->text();
         } else if (role == ActionRole) {
             return QVariant::fromValue(m_searchAction.data());
+        } else if (role == SearchRole) {
+            return true;
         }
     }
     if (row >= actions.count()) {
@@ -899,6 +913,8 @@ QVariant AppMenuModel::data(const QModelIndex &index, int role) const
         return actions.at(row)->text();
     } else if (role == ActionRole) {
         return QVariant::fromValue(actions.at(row));
+    } else if (role == SearchRole) {
+        return false;
     }
 
     return {};

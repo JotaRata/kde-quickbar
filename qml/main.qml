@@ -710,12 +710,14 @@ PlasmoidItem {
                         required property int index
                         required property string activeMenu
                         required property PlasmaCore.Action activeActions
+                        required property bool isSearch
                         readonly property int buttonIndex: index
 
                         Layout.alignment: Qt.AlignVCenter
                         Layout.fillWidth: root.vertical
                         Layout.fillHeight: !root.vertical
                         text: activeMenu
+                        iconName: isSearch && Plasmoid.configuration.searchAsIcon ? "search" : ""
                         Kirigami.MnemonicData.active: altState.pressed
 
                         down: Plasmoid.currentIndex === index

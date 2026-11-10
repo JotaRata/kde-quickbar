@@ -37,6 +37,7 @@ KCMUtils.SimpleKCM {
     readonly property string cfg_hideByWindowStateDefault: "dontHide"
     readonly property bool cfg_hoverOpensMenuDefault: true
     readonly property bool cfg_enableMenuSearchDefault: true
+    readonly property bool cfg_searchAsIconDefault: false
     readonly property bool cfg_enableGenericMenuDefault: true
     readonly property string cfg_excludedItemsRegexDefault: ""
     readonly property int cfg_maxMenuCellsDefault: 15
@@ -51,6 +52,7 @@ KCMUtils.SimpleKCM {
     property string cfg_hideByWindowState: "dontHide"
     property alias cfg_hoverOpensMenu: hoverOpensMenuCheck.checked
     property alias cfg_enableMenuSearch: enableMenuSearchCheck.checked
+    property alias cfg_searchAsIcon: searchAsIconCheck.checked
     property alias cfg_enableGenericMenu: enableGenericMenuCheck.checked
     property alias cfg_excludedItemsRegex: excludedItemsRegexField.text
     property alias cfg_maxMenuCells: maxMenuCellsSpin.value
@@ -297,6 +299,13 @@ KCMUtils.SimpleKCM {
                         id: enableGenericMenuCheck
                         Kirigami.FormData.label: " "
                         text: i18n("Generic menu for apps without global menu support")
+                    }
+
+                    QQC2.CheckBox {
+                        id: searchAsIconCheck
+                        Kirigami.FormData.label: " "
+                        text: i18n("Show the search entry as an icon")
+                        enabled: enableMenuSearchCheck.checked
                     }
 
                     QQC2.TextField {
