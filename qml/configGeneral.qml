@@ -37,7 +37,7 @@ KCMUtils.SimpleKCM {
     readonly property string cfg_hideByWindowStateDefault: "dontHide"
     readonly property bool cfg_hoverOpensMenuDefault: true
     readonly property bool cfg_enableMenuSearchDefault: true
-    readonly property bool cfg_searchAsIconDefault: false
+    readonly property string cfg_searchDisplayDefault: "text"
     readonly property bool cfg_enableGenericMenuDefault: true
     readonly property string cfg_excludedItemsRegexDefault: ""
     readonly property int cfg_maxMenuCellsDefault: 15
@@ -52,7 +52,7 @@ KCMUtils.SimpleKCM {
     property string cfg_hideByWindowState: "dontHide"
     property alias cfg_hoverOpensMenu: hoverOpensMenuCheck.checked
     property alias cfg_enableMenuSearch: enableMenuSearchCheck.checked
-    property alias cfg_searchAsIcon: searchAsIconCheck.checked
+    property string cfg_searchDisplay: "text"
     property alias cfg_enableGenericMenu: enableGenericMenuCheck.checked
     property alias cfg_excludedItemsRegex: excludedItemsRegexField.text
     property alias cfg_maxMenuCells: maxMenuCellsSpin.value
@@ -301,11 +301,31 @@ KCMUtils.SimpleKCM {
                         text: i18n("Generic menu for apps without global menu support")
                     }
 
-                    QQC2.CheckBox {
-                        id: searchAsIconCheck
-                        Kirigami.FormData.label: " "
-                        text: i18n("Show the search entry as an icon")
+                    QQC2.ComboBox {
+                        id: searchDisplayCombo
+                        Kirigami.FormData.label: i18n("Search entry:")
+                        textRole: "text"
+                        valueRole: "value"
+                        model: [
+                            { value: "text", text: i18n("As text") },
+                            { value: "icon", text: i18n("As an icon") },
+                            { value: "hidden", text: i18n("Hidden") },
+                        ]
                         enabled: enableMenuSearchCheck.checked
+                        Component.onCompleted: syncFromConfig()
+                        onActivated: generalPage.cfg_searchDisplay = currentValue
+
+                        function syncFromConfig() {
+                            const idx = indexOfValue(generalPage.cfg_searchDisplay)
+                            currentIndex = idx >= 0 ? idx : 0
+                        }
+
+                        Connections {
+                            target: generalPage
+                            function onCfg_searchDisplayChanged() {
+                                searchDisplayCombo.syncFromConfig()
+                            }
+                        }
                     }
 
                     QQC2.TextField {
