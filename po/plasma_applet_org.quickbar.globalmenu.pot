@@ -8,7 +8,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PACKAGE VERSION\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-11-11 02:00-0300\n"
+"POT-Creation-Date: 2026-11-11 03:59-0300\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: LANGUAGE <LL@li.org>\n"
@@ -54,59 +54,59 @@ msgctxt ""
 msgid "Screen &%1 (%2)"
 msgstr ""
 
-#: src/desktopmenu.cpp:49
+#: src/desktopmenu.cpp:52
 msgid "&File"
 msgstr ""
 
-#: src/desktopmenu.cpp:56 src/genericmenu.cpp:31
+#: src/desktopmenu.cpp:59 src/genericmenu.cpp:31
 msgid "&Edit"
 msgstr ""
 
-#: src/desktopmenu.cpp:62
+#: src/desktopmenu.cpp:65
 msgid "&View"
 msgstr ""
 
-#: src/desktopmenu.cpp:66
+#: src/desktopmenu.cpp:69
 msgid "&Places"
 msgstr ""
 
-#: src/desktopmenu.cpp:67
+#: src/desktopmenu.cpp:70
 msgid "&Network"
 msgstr ""
 
-#: src/desktopmenu.cpp:69
+#: src/desktopmenu.cpp:72
 msgid "&Tags"
 msgstr ""
 
-#: src/desktopmenu.cpp:72
+#: src/desktopmenu.cpp:75
 msgid "&New"
 msgstr ""
 
-#: src/desktopmenu.cpp:74
+#: src/desktopmenu.cpp:77
 msgid "&Properties"
 msgstr ""
 
-#: src/desktopmenu.cpp:86
-msgid "New &Window"
+#: src/desktopmenu.cpp:103
+msgid "Open File &Manager"
 msgstr ""
 
-#: src/desktopmenu.cpp:98
+#: src/desktopmenu.cpp:115
 msgid "&Compress"
 msgstr ""
 
-#: src/desktopmenu.cpp:102 src/desktopmenu.cpp:107
+#: src/desktopmenu.cpp:119 src/desktopmenu.cpp:124
 msgid "Compress to \"%1\""
 msgstr ""
 
-#: src/desktopmenu.cpp:111
+#: src/desktopmenu.cpp:128
 msgid "Compress to…"
 msgstr ""
 
-#: src/desktopmenu.cpp:119 src/genericmenu.cpp:39
+#: src/desktopmenu.cpp:136 src/genericmenu.cpp:39
 msgid "Select &All"
 msgstr ""
 
-#: src/desktopmenu.cpp:142
+#: src/desktopmenu.cpp:173
 msgid "Display Configuration"
 msgstr ""
 

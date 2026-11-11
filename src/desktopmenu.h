@@ -137,8 +137,6 @@ private:
     // Selection-dependent borrowed actions, re-gated live.
     QPointer<QAction> m_trashAction;
     QPointer<QAction> m_delAction;
-    QPointer<QAction> m_renameAction;
-    QPointer<QAction> m_cutAction;
     QPointer<QAction> m_copyAction;
     // True while this object emits the containment's
     // contextualActionsAboutToShow (whose Plasma-side handler chain ends
@@ -158,6 +156,15 @@ private:
     // properties action (Plasma builds one per popup), so this calls the
     // model's Q_INVOKABLE openPropertiesDialog() instead.
     QAction *m_propertiesAction = nullptr;
+    // "Rename" for the desktop selection. QuickBar's own action instead
+    // of the borrowed FolderModel one: updateActions() re-enables the
+    // borrowed action even with nothing selected (it falls back to the
+    // desktop root folder, which "supports moving"), which would leave
+    // Rename clickable with no selection. Carries the standard action's
+    // look and triggers the model's requestRename() signal — the same
+    // one Plasma's own rename action fires, answered by the folder
+    // view's inline editor.
+    QAction *m_renameAction = nullptr;
     // Borrowed FolderModel "open" action (runSelected), selection-gated.
     QPointer<QAction> m_openAction;
     // "New Window", Finder's New Finder Window: the Dolphin service
@@ -173,6 +180,11 @@ private:
     // "Select All": FolderModel::setRangeSelected over every row; the
     // selectionChanged() it fires re-enables the gated entries live.
     QAction *m_selectAllAction = nullptr;
+    // "Cut" for the desktop selection. Own action for the same reason as
+    // Rename (updateActions() re-enables the borrowed one with no
+    // selection); triggers the model's Q_INVOKABLE cut() like Plasma's
+    // own cut action.
+    QAction *m_cutAction = nullptr;
     // "Redo": KIO FileUndoManager, mirrored from FolderModel's own undo
     // wiring (standard action text/icon, enabled state and description
     // text from the manager's signals).

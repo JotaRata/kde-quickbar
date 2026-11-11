@@ -83,10 +83,24 @@ DesktopMenu::DesktopMenu(QObject *parent)
         }
     });
 
-    // New Window opens Dolphin at its default location: the same service
-    // launch the Meta+E shortcut performs (Dolphin's desktop file is what
-    // declares that shortcut).
-    m_newWindowAction = new QAction(QIcon::fromTheme(QStringLiteral("system-file-manager")), i18n("New &Window"), this);
+    // Rename is QuickBar's own action instead of the borrowed FolderModel
+    // one, so Plasma's updateActions() can't re-enable it while nothing
+    // is selected; see the header for details. The standard action look
+    // matches Plasma's own rename, which fires the very same
+    // requestRename() signal.
+    m_renameAction = KStandardAction::renameFile(nullptr, nullptr, this);
+    connect(m_renameAction, &QAction::triggered, this, [this]() {
+        if (m_folderModel) {
+            // FolderModel::requestRename(): the folder view opens its
+            // inline editor for the current selection.
+            QMetaObject::invokeMethod(m_folderModel, "requestRename");
+        }
+    });
+
+    // Open File Manager opens Dolphin at its default location: the same
+    // service launch the Meta+E shortcut performs (Dolphin's desktop
+    // file is what declares that shortcut).
+    m_newWindowAction = new QAction(QIcon::fromTheme(QStringLiteral("system-file-manager")), i18n("Open File &Manager"), this);
     connect(m_newWindowAction, &QAction::triggered, this, [] {
         if (auto service = KService::serviceByStorageId(QStringLiteral("org.kde.dolphin"))) {
             auto *job = new KIO::ApplicationLauncherJob(service);
@@ -125,6 +139,20 @@ DesktopMenu::DesktopMenu(QObject *parent)
         const int count = model ? model->rowCount() : 0;
         if (count > 0) {
             QMetaObject::invokeMethod(m_folderModel, "setRangeSelected", Q_ARG(int, 0), Q_ARG(int, count - 1));
+        }
+    });
+
+    // Cut is QuickBar's own action instead of the borrowed FolderModel
+    // one, for the same reason as Rename (Plasma's updateActions()
+    // re-enables the borrowed one with nothing selected). The standard
+    // action look matches Plasma's own cut, which calls the model's
+    // cut().
+    m_cutAction = KStandardAction::cut(nullptr, nullptr, this);
+    connect(m_cutAction, &QAction::triggered, this, [this]() {
+        if (m_folderModel) {
+            // FolderModel::cut(): the selection to the clipboard with
+            // the cut marker, exactly what Plasma's own action calls.
+            QMetaObject::invokeMethod(m_folderModel, "cut");
         }
     });
 
@@ -292,8 +320,6 @@ void DesktopMenu::watchFolderSelection(QObject *model)
         m_folderModel.clear();
         m_trashAction.clear();
         m_delAction.clear();
-        m_renameAction.clear();
-        m_cutAction.clear();
         m_copyAction.clear();
         m_openAction.clear();
     }
@@ -484,19 +510,18 @@ void DesktopMenu::rebuildFileMenu()
     ++built;
     m_fileMenu->addSeparator();
 
-    // Open, Rename and Compress, for the desktop selection.
+    // Open, Rename and Compress, for the desktop selection. Rename is
+    // QuickBar's own action, so its greyed-out state survives Plasma's
+    // updateActions() runs (see the header).
     m_openAction = modelAction(model, QStringLiteral("open"));
     if (m_openAction) {
         m_openAction->setEnabled(hasSelection);
         m_fileMenu->addAction(m_openAction);
         ++built;
     }
-    m_renameAction = modelAction(model, QStringLiteral("rename"));
-    if (m_renameAction) {
-        m_renameAction->setEnabled(hasSelection);
-        m_fileMenu->addAction(m_renameAction);
-        ++built;
-    }
+    m_renameAction->setEnabled(hasSelection);
+    m_fileMenu->addAction(m_renameAction);
+    ++built;
     m_compressAction->setEnabled(hasSelection);
     m_fileMenu->addMenu(m_compressMenu);
     ++built;
@@ -559,19 +584,22 @@ void DesktopMenu::rebuildEditMenu()
         // Undo and the clipboard operations for the desktop selection.
         // Cut and Copy stay greyed out until desktop icons are selected;
         // Paste is selection-independent and keeps Plasma's own state.
+        // Cut is QuickBar's own action, like Rename in the File dropdown.
         const QList<QString> names = {QStringLiteral("undo"), QStringLiteral("cut"), QStringLiteral("copy"), QStringLiteral("paste")};
         for (const QString &name : names) {
+            if (name == QLatin1String("cut")) {
+                m_cutAction->setEnabled(hasSelection);
+                m_editMenu->addAction(m_cutAction);
+                ++built;
+                continue;
+            }
             QAction *action = modelAction(model, name);
             if (!action) {
                 continue;
             }
-            if (name == QLatin1String("cut") || name == QLatin1String("copy")) {
+            if (name == QLatin1String("copy")) {
                 action->setEnabled(hasSelection);
-                if (name == QLatin1String("cut")) {
-                    m_cutAction = action;
-                } else {
-                    m_copyAction = action;
-                }
+                m_copyAction = action;
             }
             m_editMenu->addAction(action);
             ++built;
