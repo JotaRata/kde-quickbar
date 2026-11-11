@@ -90,6 +90,10 @@ msgstr ""
 msgid "Open File &Manager"
 msgstr ""
 
+#: src/desktopmenu.cpp:117
+msgid "Open &Terminal"
+msgstr ""
+
 #: src/desktopmenu.cpp:115
 msgid "&Compress"
 msgstr ""

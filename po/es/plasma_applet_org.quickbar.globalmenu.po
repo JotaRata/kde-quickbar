@@ -90,6 +90,10 @@ msgstr "&Propiedades"
 msgid "Open File &Manager"
 msgstr "Abrir &gestor de archivos"
 
+#: src/desktopmenu.cpp:117
+msgid "Open &Terminal"
+msgstr "Abrir &terminal"
+
 #: src/desktopmenu.cpp:115
 msgid "&Compress"
 msgstr "&Comprimir"

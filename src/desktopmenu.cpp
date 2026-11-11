@@ -54,7 +54,7 @@ DesktopMenu::DesktopMenu(QObject *parent)
     // The dropdown's natural width sits right at the style's elision
     // threshold, cropping longer entries ("Open File Manager"). Keep it a
     // bit wider so every label fits.
-    m_fileMenu->setMinimumWidth(240);
+    m_fileMenu->setMinimumWidth(320);
     connect(m_fileMenu, &QMenu::aboutToShow, this, &DesktopMenu::rebuildFileMenu);
 
     // Desktop editing (Undo, Cut, Copy, Paste) and Plasma's desktop
