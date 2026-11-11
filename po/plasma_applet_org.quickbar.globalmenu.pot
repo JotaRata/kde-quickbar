@@ -8,7 +8,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PACKAGE VERSION\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-11-10 20:40-0300\n"
+"POT-Creation-Date: 2026-11-11 00:56-0300\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: LANGUAGE <LL@li.org>\n"
@@ -54,23 +54,39 @@ msgctxt ""
 msgid "Screen &%1 (%2)"
 msgstr ""
 
-#: src/desktopmenu.cpp:36 src/genericmenu.cpp:31
+#: src/desktopmenu.cpp:46
+msgid "&File"
+msgstr ""
+
+#: src/desktopmenu.cpp:53 src/genericmenu.cpp:31
 msgid "&Edit"
 msgstr ""
 
-#: src/desktopmenu.cpp:40
+#: src/desktopmenu.cpp:59
+msgid "&View"
+msgstr ""
+
+#: src/desktopmenu.cpp:63
 msgid "&Places"
 msgstr ""
 
-#: src/desktopmenu.cpp:41
+#: src/desktopmenu.cpp:64
 msgid "&Network"
 msgstr ""
 
-#: src/desktopmenu.cpp:43
+#: src/desktopmenu.cpp:66
 msgid "&Tags"
 msgstr ""
 
-#: src/desktopmenu.cpp:47
+#: src/desktopmenu.cpp:69
+msgid "&New"
+msgstr ""
+
+#: src/desktopmenu.cpp:71
+msgid "&Properties"
+msgstr ""
+
+#: src/desktopmenu.cpp:81
 msgid "Display Configuration"
 msgstr ""
 
