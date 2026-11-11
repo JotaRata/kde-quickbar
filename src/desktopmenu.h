@@ -170,6 +170,9 @@ private:
     // "New Window", Finder's New Finder Window: the Dolphin service
     // launch, the same one the Meta+E shortcut performs.
     QAction *m_newWindowAction = nullptr;
+    // "Open Terminal": the Konsole service launch, same pattern as
+    // "New Window" above.
+    QAction *m_terminalAction = nullptr;
     // "Compress" submenu, mirroring ark's own folder-view dropdown:
     // "Compress as ZIP" and "Compress as TAR.GZ" through ark's batch
     // interface, plus the dialog variant. The submenu is persistent

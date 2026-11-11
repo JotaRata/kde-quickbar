@@ -51,6 +51,10 @@ DesktopMenu::DesktopMenu(QObject *parent)
     // greyed out until desktop icons are selected.
     m_fileMenu = m_menu->addMenu(i18n("&File"));
     m_fileMenu->menuAction()->setVisible(false);
+    // The dropdown's natural width sits right at the style's elision
+    // threshold, cropping longer entries ("Open File Manager"). Keep it a
+    // bit wider so every label fits.
+    m_fileMenu->setMinimumWidth(240);
     connect(m_fileMenu, &QMenu::aboutToShow, this, &DesktopMenu::rebuildFileMenu);
 
     // Desktop editing (Undo, Cut, Copy, Paste) and Plasma's desktop
@@ -103,6 +107,16 @@ DesktopMenu::DesktopMenu(QObject *parent)
     m_newWindowAction = new QAction(QIcon::fromTheme(QStringLiteral("system-file-manager")), i18n("Open File &Manager"), this);
     connect(m_newWindowAction, &QAction::triggered, this, [] {
         if (auto service = KService::serviceByStorageId(QStringLiteral("org.kde.dolphin"))) {
+            auto *job = new KIO::ApplicationLauncherJob(service);
+            job->start();
+        }
+    });
+
+    // Open Terminal sits right below Open File Manager, launched through
+    // Konsole's service the same way (no new dependency).
+    m_terminalAction = new QAction(QIcon::fromTheme(QStringLiteral("utilities-terminal")), i18n("Open &Terminal"), this);
+    connect(m_terminalAction, &QAction::triggered, this, [] {
+        if (auto service = KService::serviceByStorageId(QStringLiteral("org.kde.konsole"))) {
             auto *job = new KIO::ApplicationLauncherJob(service);
             job->start();
         }
@@ -258,6 +272,15 @@ void DesktopMenu::setAnchorContainment(Plasma::Containment *containment)
 
 void DesktopMenu::refreshDesktopActions()
 {
+    // At login the FolderView QML pushes its shared actions (newMenu and
+    // the FolderModel behind it) into the containment's contextual
+    // actions only after the first refresh has run, which leaves File
+    // and View hidden until the next desktop activation rebuilds them.
+    // Rebuild again as soon as they arrive.
+    if (Plasma::Containment *desktop = desktopContainment()) {
+        connect(desktop, &Plasma::Applet::contextualActionsChanged, this, &DesktopMenu::refreshDesktopActions, Qt::UniqueConnection);
+    }
+
     rebuildFileMenu();
     rebuildEditMenu();
     rebuildViewMenu();
@@ -505,8 +528,11 @@ void DesktopMenu::rebuildFileMenu()
     }
 
     // New Window, Finder's "New Finder Window": Dolphin at its default
-    // location, the same service launch as the Meta+E shortcut.
+    // location, the same service launch as the Meta+E shortcut. Open
+    // Terminal follows it.
     m_fileMenu->addAction(m_newWindowAction);
+    ++built;
+    m_fileMenu->addAction(m_terminalAction);
     ++built;
     m_fileMenu->addSeparator();
 

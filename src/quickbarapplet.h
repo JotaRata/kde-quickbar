@@ -95,6 +95,11 @@ private:
     static constexpr int WindowMenuIndex = -2;
 
     int calculateMaxHeightForCells(QMenu *menu, int maxCells) const;
+    // Height cap for the search dropdown: the search field and its
+    // separator are chrome, only the result rows count towards
+    // maxMenuCells. Computed without relying on the results being
+    // present, since they are inserted while the popup is visible.
+    int calculateSearchMenuMaxHeight(QMenu *menu) const;
     int totalContentHeight(QMenu *menu) const;
     bool handleMenuWheel(QMenu *menu, QWheelEvent *e);
     void clampActionRects(QMenu *menu) const;
