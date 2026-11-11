@@ -51,9 +51,6 @@ DesktopMenu::DesktopMenu(QObject *parent)
     // greyed out until desktop icons are selected.
     m_fileMenu = m_menu->addMenu(i18n("&File"));
     m_fileMenu->menuAction()->setVisible(false);
-    // The dropdown's natural width sits right at the style's elision
-    // threshold, cropping longer entries ("Open File Manager"). Keep it a
-    // bit wider so every label fits.
     m_fileMenu->setMinimumWidth(320);
     connect(m_fileMenu, &QMenu::aboutToShow, this, &DesktopMenu::rebuildFileMenu);
 
@@ -112,8 +109,6 @@ DesktopMenu::DesktopMenu(QObject *parent)
         }
     });
 
-    // Open Terminal sits right below Open File Manager, launched through
-    // Konsole's service the same way (no new dependency).
     m_terminalAction = new QAction(QIcon::fromTheme(QStringLiteral("utilities-terminal")), i18n("Open &Terminal"), this);
     connect(m_terminalAction, &QAction::triggered, this, [] {
         if (auto service = KService::serviceByStorageId(QStringLiteral("org.kde.konsole"))) {
@@ -528,8 +523,7 @@ void DesktopMenu::rebuildFileMenu()
     }
 
     // New Window, Finder's "New Finder Window": Dolphin at its default
-    // location, the same service launch as the Meta+E shortcut. Open
-    // Terminal follows it.
+    // location, the same service launch as the Meta+E shortcut.
     m_fileMenu->addAction(m_newWindowAction);
     ++built;
     m_fileMenu->addAction(m_terminalAction);

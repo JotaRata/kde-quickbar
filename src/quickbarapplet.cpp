@@ -498,10 +498,6 @@ int QuickBarApplet::calculateSearchMenuMaxHeight(QMenu *menu) const
     }
     menu->ensurePolished();
 
-    // The search field (a QWidgetAction) and its separator are chrome;
-    // only the result rows below count towards the row limit. The cap is
-    // computed from the current cell height so it stays valid while the
-    // menu is still empty and results are typed in.
     int cellHeight = 0;
     int chromeHeight = 0;
     for (const QAction *action : menu->actions()) {
@@ -1016,18 +1012,11 @@ bool QuickBarApplet::eventFilter(QObject *watched, QEvent *event)
         if (!screen) {
             screen = QGuiApplication::primaryScreen();
         }
-        // Respect the "Max dropdown rows" setting like every other
-        // dropdown: results are inserted while the popup is visible, so
-        // the height cap follows each resize instead of being applied once
-        // at popup time. Setting it re-triggers Resize once; the value is
-        // then unchanged and the loop settles.
         if (m_maxMenuCells > 0) {
             int maxHeight = calculateSearchMenuMaxHeight(menu);
             if (screen) {
                 maxHeight = qMin(maxHeight, screen->availableGeometry().height() - 20);
             }
-            // trigger() already capped the popup to the space available on
-            // this side of the panel; never grow past that.
             maxHeight = qMin(maxHeight, menu->maximumHeight());
             if (maxHeight > 0 && menu->maximumHeight() != maxHeight) {
                 menu->setMaximumHeight(maxHeight);
