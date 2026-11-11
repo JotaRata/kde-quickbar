@@ -7,7 +7,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: quickbar 1.13\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-11-11 00:56-0300\n"
+"POT-Creation-Date: 2026-11-11 02:00-0300\n"
 "PO-Revision-Date: 2026-11-09 00:00-0300\n"
 "Last-Translator: JotaRata <jjbarria.c@gmail.com>\n"
 "Language-Team: Spanish <kde-l10n-es@kde.org>\n"
@@ -54,39 +54,60 @@ msgctxt ""
 msgid "Screen &%1 (%2)"
 msgstr "Pantalla &%1 (%2)"
 
-#: src/desktopmenu.cpp:46
+#: src/desktopmenu.cpp:49
 msgid "&File"
 msgstr "&Archivo"
 
-#: src/desktopmenu.cpp:53 src/genericmenu.cpp:31
+#: src/desktopmenu.cpp:56 src/genericmenu.cpp:31
 msgid "&Edit"
 msgstr "&Editar"
 
-#: src/desktopmenu.cpp:59
+#: src/desktopmenu.cpp:62
 msgid "&View"
 msgstr "&Ver"
 
-#: src/desktopmenu.cpp:63
+#: src/desktopmenu.cpp:66
 msgid "&Places"
 msgstr "&Lugares"
 
-#: src/desktopmenu.cpp:64
+#: src/desktopmenu.cpp:67
 msgid "&Network"
 msgstr "&Red"
 
-#: src/desktopmenu.cpp:66
+#: src/desktopmenu.cpp:69
 msgid "&Tags"
 msgstr "&Etiquetas"
 
-#: src/desktopmenu.cpp:69
+#: src/desktopmenu.cpp:72
 msgid "&New"
 msgstr "&Nuevo"
 
-#: src/desktopmenu.cpp:71
+#: src/desktopmenu.cpp:74
 msgid "&Properties"
 msgstr "&Propiedades"
 
-#: src/desktopmenu.cpp:81
+#: src/desktopmenu.cpp:86
+msgid "New &Window"
+msgstr "Nueva &ventana"
+
+#: src/desktopmenu.cpp:98
+msgid "&Compress"
+msgstr "&Comprimir"
+
+#: src/desktopmenu.cpp:102 src/desktopmenu.cpp:107
+#, fuzzy
+msgid "Compress to \"%1\""
+msgstr "Comprimir como «%1»"
+
+#: src/desktopmenu.cpp:111
+msgid "Compress to…"
+msgstr "Comprimir en…"
+
+#: src/desktopmenu.cpp:119 src/genericmenu.cpp:39
+msgid "Select &All"
+msgstr "Seleccionar t&odo"
+
+#: src/desktopmenu.cpp:142
 msgid "Display Configuration"
 msgstr "Configuración de la pantalla"
 
@@ -109,10 +130,6 @@ msgstr "&Copiar"
 #: src/genericmenu.cpp:37
 msgid "&Paste"
 msgstr "&Pegar"
-
-#: src/genericmenu.cpp:39
-msgid "Select &All"
-msgstr "Seleccionar t&odo"
 
 #: src/genericmenu.cpp:41
 msgid "&Help"
@@ -585,4 +602,5 @@ msgstr "General"
 msgctxt "@info:usagetip"
 msgid "Open a menu"
 msgstr "Abrir un menú"
+
 

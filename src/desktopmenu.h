@@ -87,6 +87,18 @@ private:
     // FolderModel::hasSelection(): gates the selection-dependent file
     // operations, which stay greyed out until desktop icons are selected.
     bool folderHasSelection(QObject *model) const;
+    // FolderModel's selected rows as URLs, read live at trigger time
+    // (selections happen long after the last rebuild); feeds the
+    // Compress action.
+    QList<QUrl> selectedUrls(QObject *model) const;
+    // Compress the desktop selection with ark's CLI: a suffix runs the
+    // batch interface (autofilename), an empty one the add dialog asking
+    // for the archive name.
+    void compressSelection(const QString &suffix);
+    // Launch ark for the local files of a compress request; split off
+    // compressSelection() because the desktop containment reports
+    // desktop:/ URLs, which must be resolved to local paths first.
+    void launchArk(const QString &suffix, const QStringList &files);
     // False while the dropdown's actions are borrowed by QuickBar's open
     // popup; the rebuild is postponed until flushPendingRebuild().
     bool canRebuildDropdown(QMenu *menu, int lastBuiltCount);
@@ -146,6 +158,25 @@ private:
     // properties action (Plasma builds one per popup), so this calls the
     // model's Q_INVOKABLE openPropertiesDialog() instead.
     QAction *m_propertiesAction = nullptr;
+    // Borrowed FolderModel "open" action (runSelected), selection-gated.
+    QPointer<QAction> m_openAction;
+    // "New Window", Finder's New Finder Window: the Dolphin service
+    // launch, the same one the Meta+E shortcut performs.
+    QAction *m_newWindowAction = nullptr;
+    // "Compress" submenu, mirroring ark's own folder-view dropdown:
+    // "Compress as ZIP" and "Compress as TAR.GZ" through ark's batch
+    // interface, plus the dialog variant. The submenu is persistent
+    // (like the Places group submenus); its menuAction is what the
+    // selection gate disables.
+    QMenu *m_compressMenu = nullptr;
+    QPointer<QAction> m_compressAction;
+    // "Select All": FolderModel::setRangeSelected over every row; the
+    // selectionChanged() it fires re-enables the gated entries live.
+    QAction *m_selectAllAction = nullptr;
+    // "Redo": KIO FileUndoManager, mirrored from FolderModel's own undo
+    // wiring (standard action text/icon, enabled state and description
+    // text from the manager's signals).
+    QAction *m_redoAction = nullptr;
     // "Display Configuration" entry of the Edit dropdown, created once
     // and shown only while kscreen's KCM is available.
     QAction *m_displayConfigurationAction = nullptr;

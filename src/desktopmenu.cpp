@@ -10,15 +10,21 @@
 #include <KDialogJobUiDelegate>
 #include <KFilePlacesModel>
 #include <KIO/ApplicationLauncherJob>
+#include <KIO/FileUndoManager>
 #include <KIO/OpenUrlJob>
+#include <KIO/StatJob>
 #include <KLocalizedString>
 #include <KService>
+#include <KStandardAction>
 
 #include <QAbstractItemModel>
 #include <QAction>
 #include <QIcon>
 #include <QMenu>
+#include <QProcess>
 #include <QQmlListProperty>
+
+#include <memory>
 
 #include <Plasma/Corona>
 
@@ -74,6 +80,64 @@ DesktopMenu::DesktopMenu(QObject *parent)
             // FolderModel::openPropertiesDialog(), for the current
             // desktop selection.
             QMetaObject::invokeMethod(m_folderModel, "openPropertiesDialog");
+        }
+    });
+
+    // New Window opens Dolphin at its default location: the same service
+    // launch the Meta+E shortcut performs (Dolphin's desktop file is what
+    // declares that shortcut).
+    m_newWindowAction = new QAction(QIcon::fromTheme(QStringLiteral("system-file-manager")), i18n("New &Window"), this);
+    connect(m_newWindowAction, &QAction::triggered, this, [] {
+        if (auto service = KService::serviceByStorageId(QStringLiteral("org.kde.dolphin"))) {
+            auto *job = new KIO::ApplicationLauncherJob(service);
+            job->start();
+        }
+    });
+
+    // Compress submenu, mirroring ark's own folder-view dropdown, entry
+    // order and labels ("Compress to «tar.gz»" style, from ark's own
+    // msgid). URLs are collected at trigger time (selections happen
+    // after the last rebuild).
+    m_compressMenu = m_fileMenu->addMenu(i18n("&Compress"));
+    m_compressMenu->setIcon(QIcon::fromTheme(QStringLiteral("archive-insert")));
+    m_compressAction = m_compressMenu->menuAction();
+    QAction *compressTarGzAction = m_compressMenu->addAction(QIcon::fromTheme(QStringLiteral("application-x-compressed-tar")),
+                                                             i18n("Compress to \"%1\"", QStringLiteral("tar.gz")));
+    connect(compressTarGzAction, &QAction::triggered, this, [this]() {
+        compressSelection(QStringLiteral("tar.gz"));
+    });
+    QAction *compressZipAction = m_compressMenu->addAction(QIcon::fromTheme(QStringLiteral("application-zip")),
+                                                           i18n("Compress to \"%1\"", QStringLiteral("zip")));
+    connect(compressZipAction, &QAction::triggered, this, [this]() {
+        compressSelection(QStringLiteral("zip"));
+    });
+    QAction *compressToAction = m_compressMenu->addAction(QIcon::fromTheme(QStringLiteral("archive-insert")), i18n("Compress to…"));
+    connect(compressToAction, &QAction::triggered, this, [this]() {
+        compressSelection(QString());
+    });
+
+    // Select All: FolderModel::setRangeSelected() over every row; the
+    // selectionChanged() it fires re-enables the selection-dependent
+    // entries instantly through the live gate.
+    m_selectAllAction = new QAction(QIcon::fromTheme(QStringLiteral("edit-select-all")), i18n("Select &All"), this);
+    connect(m_selectAllAction, &QAction::triggered, this, [this]() {
+        const auto *model = qobject_cast<const QAbstractItemModel *>(m_folderModel.data());
+        const int count = model ? model->rowCount() : 0;
+        if (count > 0) {
+            QMetaObject::invokeMethod(m_folderModel, "setRangeSelected", Q_ARG(int, 0), Q_ARG(int, count - 1));
+        }
+    });
+
+    // Redo, mirroring FolderModel's own undo wiring: the standard
+    // action's text and icon, enabled state and description text
+    // straight from KIO's global FileUndoManager.
+    KIO::FileUndoManager *undoManager = KIO::FileUndoManager::self();
+    m_redoAction = KStandardAction::redo(undoManager, &KIO::FileUndoManager::redo, this);
+    m_redoAction->setEnabled(undoManager->isRedoAvailable());
+    connect(undoManager, &KIO::FileUndoManager::redoAvailable, m_redoAction, &QAction::setEnabled);
+    connect(undoManager, &KIO::FileUndoManager::redoTextChanged, this, [this](const QString &text) {
+        if (!text.isEmpty()) {
+            m_redoAction->setText(text);
         }
     });
 
@@ -231,6 +295,7 @@ void DesktopMenu::watchFolderSelection(QObject *model)
         m_renameAction.clear();
         m_cutAction.clear();
         m_copyAction.clear();
+        m_openAction.clear();
     }
     if (model) {
         m_folderModel = model;
@@ -240,13 +305,62 @@ void DesktopMenu::watchFolderSelection(QObject *model)
     }
 }
 
+void DesktopMenu::compressSelection(const QString &suffix)
+{
+    // Ark's CLI: --batch --add --autofilename <suffix> creates
+    // "<name>.<suffix>" next to the selection without any dialog, the
+    // same archive creation its folder-view plugin performs; an empty
+    // suffix (plain --add --dialog) opens ark's add dialog asking for
+    // the archive name.
+    const QList<QUrl> urls = selectedUrls(m_folderModel);
+    if (urls.isEmpty()) {
+        return;
+    }
+
+    // The desktop containment reports its items with desktop:/ URLs
+    // (kio-desktop), not file:/. ark's batch interface resolves its
+    // inputs with QUrl::toLocalFile(), so resolve every URL to its most
+    // local form first — KIO::mostLocalUrl() asks the worker behind the
+    // URL for the local path it serves, kio-desktop here.
+    const auto resolvedFiles = std::make_shared<QStringList>();
+    const auto pending = std::make_shared<int>(urls.count());
+    for (const QUrl &url : urls) {
+        KIO::StatJob *job = KIO::mostLocalUrl(url);
+        connect(job, &KJob::result, this, [this, suffix, resolvedFiles, pending](KJob *finishedJob) {
+            const auto *statJob = static_cast<KIO::StatJob *>(finishedJob);
+            const QUrl localUrl = statJob->mostLocalUrl();
+            if (localUrl.isLocalFile() && !localUrl.toLocalFile().isEmpty()) {
+                resolvedFiles->append(localUrl.toLocalFile());
+            }
+            if (--(*pending) == 0) {
+                launchArk(suffix, *resolvedFiles);
+            }
+        });
+    }
+}
+
+void DesktopMenu::launchArk(const QString &suffix, const QStringList &files)
+{
+    if (files.isEmpty()) {
+        return;
+    }
+    QStringList args{QStringLiteral("--add")};
+    if (!suffix.isEmpty()) {
+        args << QStringLiteral("--batch") << QStringLiteral("--autofilename") << suffix;
+    } else {
+        args << QStringLiteral("--dialog");
+    }
+    args << files;
+    QProcess::startDetached(QStringLiteral("ark"), args);
+}
+
 void DesktopMenu::onFolderSelectionChanged()
 {
     if (!m_folderModel || m_emittingContextMenu) {
         return;
     }
     const bool hasSelection = folderHasSelection(m_folderModel);
-    const QPointer<QAction> gated[] = {m_trashAction, m_delAction, m_renameAction, m_cutAction, m_copyAction};
+    const QPointer<QAction> gated[] = {m_openAction, m_trashAction, m_delAction, m_renameAction, m_compressAction, m_cutAction, m_copyAction};
     for (const QPointer<QAction> &action : gated) {
         if (action) {
             action->setEnabled(hasSelection);
@@ -267,6 +381,40 @@ bool DesktopMenu::folderHasSelection(QObject *model) const
     bool hasSelection = false;
     QMetaObject::invokeMethod(model, "hasSelection", Q_RETURN_ARG(bool, hasSelection));
     return hasSelection;
+}
+
+QList<QUrl> DesktopMenu::selectedUrls(QObject *model) const
+{
+    // Read through the model's own "selected" and "url" roles; the
+    // selection lives in FolderModel's private QItemSelectionModel, which
+    // is only exposed that way.
+    QList<QUrl> urls;
+    const auto *itemModel = qobject_cast<const QAbstractItemModel *>(model);
+    if (!itemModel) {
+        return urls;
+    }
+    const QHash<int, QByteArray> roles = itemModel->roleNames();
+    const int selectedRole = roles.key(QByteArrayLiteral("selected"), -1);
+    const int urlRole = roles.key(QByteArrayLiteral("url"), -1);
+    if (selectedRole < 0 || urlRole < 0) {
+        return urls;
+    }
+    const int rows = itemModel->rowCount();
+    for (int row = 0; row < rows; ++row) {
+        const QModelIndex index = itemModel->index(row, 0);
+        if (index.data(selectedRole).toBool()) {
+            const QUrl url = index.data(urlRole).toUrl();
+            // Skip empty roles (blank or drag rows); every well-formed
+            // URL is kept — the desktop containment reports desktop:/
+            // URLs, which compressSelection() resolves to local paths
+            // through KIO before handing them to ark.
+            if (!url.isValid() || url.isEmpty()) {
+                continue;
+            }
+            urls.append(url);
+        }
+    }
+    return urls;
 }
 
 bool DesktopMenu::canRebuildDropdown(QMenu *menu, int lastBuiltCount)
@@ -330,13 +478,31 @@ void DesktopMenu::rebuildFileMenu()
         m_fileMenu->addSeparator();
     }
 
-    // Rename, Move to Trash and Delete, for the desktop selection.
+    // New Window, Finder's "New Finder Window": Dolphin at its default
+    // location, the same service launch as the Meta+E shortcut.
+    m_fileMenu->addAction(m_newWindowAction);
+    ++built;
+    m_fileMenu->addSeparator();
+
+    // Open, Rename and Compress, for the desktop selection.
+    m_openAction = modelAction(model, QStringLiteral("open"));
+    if (m_openAction) {
+        m_openAction->setEnabled(hasSelection);
+        m_fileMenu->addAction(m_openAction);
+        ++built;
+    }
     m_renameAction = modelAction(model, QStringLiteral("rename"));
     if (m_renameAction) {
         m_renameAction->setEnabled(hasSelection);
         m_fileMenu->addAction(m_renameAction);
         ++built;
     }
+    m_compressAction->setEnabled(hasSelection);
+    m_fileMenu->addMenu(m_compressMenu);
+    ++built;
+    m_fileMenu->addSeparator();
+
+    // Move to Trash and Delete, for the desktop selection.
     m_trashAction = modelAction(model, QStringLiteral("trash"));
     if (m_trashAction) {
         m_trashAction->setEnabled(hasSelection);
@@ -409,7 +575,17 @@ void DesktopMenu::rebuildEditMenu()
             }
             m_editMenu->addAction(action);
             ++built;
+            if (name == QLatin1String("undo")) {
+                // Redo next to Undo, wired like Plasma's own undo.
+                m_editMenu->addAction(m_redoAction);
+                ++built;
+            }
         }
+
+        // Select All, Finder's Edit menu: selects every desktop icon;
+        // the live gate turns the selection-dependent entries on.
+        m_editMenu->addAction(m_selectAllAction);
+        ++built;
     }
 
     Plasma::Containment *desktop = desktopContainment();
