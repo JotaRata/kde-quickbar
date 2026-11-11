@@ -330,7 +330,13 @@ void DesktopMenu::rebuildFileMenu()
         m_fileMenu->addSeparator();
     }
 
-    // Move to Trash, Delete and Properties, for the desktop selection.
+    // Rename, Move to Trash and Delete, for the desktop selection.
+    m_renameAction = modelAction(model, QStringLiteral("rename"));
+    if (m_renameAction) {
+        m_renameAction->setEnabled(hasSelection);
+        m_fileMenu->addAction(m_renameAction);
+        ++built;
+    }
     m_trashAction = modelAction(model, QStringLiteral("trash"));
     if (m_trashAction) {
         m_trashAction->setEnabled(hasSelection);
@@ -341,12 +347,6 @@ void DesktopMenu::rebuildFileMenu()
     if (m_delAction) {
         m_delAction->setEnabled(hasSelection);
         m_fileMenu->addAction(m_delAction);
-        ++built;
-    }
-    m_renameAction = modelAction(model, QStringLiteral("rename"));
-    if (m_renameAction) {
-        m_renameAction->setEnabled(hasSelection);
-        m_fileMenu->addAction(m_renameAction);
         ++built;
     }
     m_propertiesAction->setEnabled(hasSelection);
