@@ -124,6 +124,10 @@
       <label>Show a generic File/Edit/View/Help menu when the app does not export a global menu</label>
       <default>true</default>
     </entry>
+    <entry name="enableWindowMenu" type="Bool">
+      <label>Open a window actions menu (minimize, maximize, quit) from the application name</label>
+      <default>true</default>
+    </entry>
     <entry name="excludedItemsRegex" type="String">
       <label>Regular expression to exclude matching top-level menu items</label>
       <default></default>
